@@ -3,10 +3,13 @@ from __future__ import annotations
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from api.auth_tokens import auth_required
 from api.bridge import bootstrap_bettinghud
+from api.routes.auth import current_user
 from api.serialize import to_jsonable
+from api.user_scope import bankroll_for_user
 
 router = APIRouter(prefix="/live", tags=["live"])
 PARIS = ZoneInfo("Europe/Paris")
@@ -44,12 +47,13 @@ def live_meta() -> dict:
 def live_value_bets(
     ev_min_pct: float = Query(15.0, ge=0, le=100),
     mode: str = Query("value", description="value = EV+ uniquement, all = un côté par match"),
+    user: dict | None = Depends(current_user),
 ) -> dict:
     """Tuiles Live Tracker : value bets enrichies (proba, EV, Kelly, segment Brier)."""
     bootstrap_bettinghud()
     import sqlite3
 
-    from scripts.bets_db import DB_PATH_DEFAULT, compute_live_tracker_bankroll_eur
+    from scripts.bets_db import DB_PATH_DEFAULT
     from scripts.daily_top_proba_store import load_today_matches_for_daily_top_proba
     from scripts.live_tracker_picks import (
         collect_live_tracker_all_side_picks,
@@ -91,7 +95,7 @@ def live_value_bets(
 
     conn = sqlite3.connect(DB_PATH_DEFAULT)
     try:
-        bankroll = compute_live_tracker_bankroll_eur(conn)
+        bankroll = bankroll_for_user(conn, user)
     finally:
         conn.close()
 
@@ -102,7 +106,7 @@ def live_value_bets(
         "mode": mode_norm,
         "ev_min_pct": ev_min_pct if mode_norm == "value" else None,
         "snapshot_age_min": _snapshot_age_min(meta or {}),
-        "bankroll": to_jsonable(bankroll),
+        "bankroll": to_jsonable(bankroll) if bankroll else None,
         "picks": to_jsonable(picks),
     }
 

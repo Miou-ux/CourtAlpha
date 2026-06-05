@@ -18,18 +18,11 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Navigate to="/live" replace />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/" element={<Navigate to="/live" replace />} />
       <Route
         path="/live"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requireAuth={false}>
             <LivePage scanned={data.meta?.n_scanned ?? 0} bootstrapLoading={data.loading} />
           </ProtectedRoute>
         }
@@ -37,7 +30,7 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
       <Route
         path="/paris"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requireAuth={false}>
             <ParisPage
               picks={data.picks}
               scanned={data.meta?.n_scanned ?? 0}
@@ -50,7 +43,7 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
       <Route
         path="/top5"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requireAuth={false}>
             <Top5Page picks={data.top5} pool={data.meta?.n_matches_today ?? 0} loading={data.loading} />
           </ProtectedRoute>
         }
@@ -131,7 +124,7 @@ function App() {
     <div className="min-h-screen bg-bg text-white md:grid md:grid-cols-[280px_1fr]">
       <Sidebar counts={{ live: data.matches.length, paris: data.picks.length, top5: data.top5.length }} />
       <div className="min-w-0">
-        <Header meta={data.meta} portfolio={data.portfolio} />
+        <Header meta={data.meta} portfolio={data.portfolio} showBankroll={!!data.user} />
         <main className="px-4 py-5 md:px-6 md:py-6">
           {data.error && (
             <p className="mb-4 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">{data.error}</p>

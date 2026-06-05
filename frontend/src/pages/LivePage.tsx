@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { LiveValueBet } from '../api/client'
 import { api } from '../api/client'
 import { BetModal } from '../components/BetModal'
@@ -8,6 +9,7 @@ import { FilterPills, type CircuitFilter } from '../components/FilterPills'
 import { PageHero } from '../components/PageHero'
 import { ValueBetCard } from '../components/ValueBetCard'
 import { CardGridSkeleton } from '../components/ui/card-skeleton'
+import { useAuth } from '../context/AuthContext'
 import { cn } from '../lib/utils'
 
 type LivePageProps = {
@@ -26,18 +28,20 @@ function matchCircuit(p: LiveValueBet): string {
 }
 
 export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
+  const { token, user } = useAuth()
+  const navigate = useNavigate()
   const [circuit, setCircuit] = useState<CircuitFilter>('all')
   const [search, setSearch] = useState('')
   const [mode, setMode] = useState<'value' | 'all'>('value')
   const [betDraft, setBetDraft] = useState<BetDraft | null>(null)
 
   const q = useQuery({
-    queryKey: ['live-value-bets', mode],
-    queryFn: () => api.liveValueBets({ mode, ev_min_pct: 15 }),
+    queryKey: ['live-value-bets', mode, token],
+    queryFn: () => api.liveValueBets({ mode, ev_min_pct: 15 }, token),
   })
 
   const picks = q.data?.picks ?? []
-  const bankrollAvail = q.data?.bankroll?.available_eur ?? 0
+  const bankrollAvail = user ? (q.data?.bankroll?.available_eur ?? 0) : 0
   const loading = q.isLoading || bootstrapLoading
 
   const filtered = useMemo(() => {
@@ -60,7 +64,9 @@ export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
         stats={[
           { label: 'Scannés', value: String(q.data?.n_scanned ?? scanned) },
           { label: 'Tuiles', value: String(filtered.length), highlight: filtered.length > 0 },
-          { label: 'BR dispo', value: `${bankrollAvail.toFixed(0)} €` },
+          ...(user
+            ? [{ label: 'BR dispo', value: `${bankrollAvail.toFixed(0)} €` }]
+            : []),
         ]}
       />
 
@@ -106,7 +112,13 @@ export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
               key={`${p.match_name}-${p.side}-${i}`}
               pick={p}
               bankrollAvail={bankrollAvail}
-              onBet={(pick, customOdd, stakeEur) => setBetDraft({ pick, customOdd, stakeEur })}
+              onBet={(pick, customOdd, stakeEur) => {
+                if (!user) {
+                  navigate('/login')
+                  return
+                }
+                setBetDraft({ pick, customOdd, stakeEur })
+              }}
             />
           ))}
         </div>

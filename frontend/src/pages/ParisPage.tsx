@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { PickRow } from '../api/client'
 import { BetModal } from '../components/BetModal'
 import { EmptyState } from '../components/EmptyState'
 import { PageHero } from '../components/PageHero'
 import { PickCard } from '../components/PickCard'
 import { CardGridSkeleton } from '../components/ui/card-skeleton'
+import { useAuth } from '../context/AuthContext'
 
 type ParisPageProps = {
   picks: PickRow[]
@@ -14,7 +16,17 @@ type ParisPageProps = {
 }
 
 export function ParisPage({ picks, scanned, loading, onBetSuccess }: ParisPageProps) {
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [selected, setSelected] = useState<PickRow | null>(null)
+
+  function handleBet(pick: PickRow) {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    setSelected(pick)
+  }
 
   return (
     <div>
@@ -34,7 +46,7 @@ export function ParisPage({ picks, scanned, loading, onBetSuccess }: ParisPagePr
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {picks.map((p, i) => (
-            <PickCard key={`${p.bet_on}-${i}`} pick={p} index={i} featured={i === 0} onBet={setSelected} />
+            <PickCard key={`${p.bet_on}-${i}`} pick={p} index={i} featured={i === 0} onBet={handleBet} />
           ))}
         </div>
       )}

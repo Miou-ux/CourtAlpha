@@ -67,11 +67,9 @@ def auth_login(body: LoginRequest) -> dict:
 
 @router.get("/me")
 def auth_me(user: dict | None = Depends(current_user)) -> dict:
-    if not user:
-        if auth_required():
-            raise HTTPException(status_code=401, detail="Non connecté")
-        return {"ok": False, "authenticated": False, "auth_required": auth_required()}
-    return {"ok": True, "authenticated": True, "user": user, "auth_required": auth_required()}
+    if user:
+        return {"ok": True, "authenticated": True, "user": user, "auth_required": auth_required()}
+    return {"ok": True, "authenticated": False, "auth_required": auth_required()}
 
 
 @router.post("/logout")

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import type { BetCreatePayload, PickRow } from '../api/client'
 import { api } from '../api/client'
@@ -18,6 +19,7 @@ type BetModalProps = {
 
 export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake }: BetModalProps) {
   const { token } = useAuth()
+  const navigate = useNavigate()
   const [stake, setStake] = useState('10')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,6 +43,10 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake }: 
       : activePick.ev_fav_pct ?? activePick.ev_pct ?? 0
 
   async function submit() {
+    if (!token) {
+      navigate('/login')
+      return
+    }
     setLoading(true)
     setError(null)
     try {

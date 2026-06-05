@@ -11,10 +11,13 @@ type SidebarProps = {
   counts: { live: number; paris: number; top5: number; topProbas?: number }
 }
 
-const mainLinks = [
+const publicLinks = [
   { to: '/live', label: 'Live Tracker', icon: LayoutGrid, key: 'live' as const },
   { to: '/paris', label: 'Paris du jour', icon: CalendarDays, key: 'paris' as const },
   { to: '/top5', label: 'Top 5', icon: Trophy, key: 'top5' as const },
+]
+
+const memberLinks = [
   { to: '/top-probas', label: 'Top probas', icon: LineChart, key: 'topProbas' as const },
   { to: '/portfolio', label: 'Portefeuille', icon: Wallet, key: 'portfolio' as const },
 ]
@@ -69,15 +72,25 @@ export function Sidebar({ counts }: SidebarProps) {
         <CourtAlphaLogo size="xl" className="w-full" />
       </div>
       <nav className="space-y-1">
-        {mainLinks.map((l) => (
+        {publicLinks.map((l) => (
           <NavItem
             key={l.to}
             to={l.to}
             label={l.label}
             icon={l.icon}
-            count={l.key && l.key !== 'portfolio' ? counts[l.key] : null}
+            count={counts[l.key]}
           />
         ))}
+        {user &&
+          memberLinks.map((l) => (
+            <NavItem
+              key={l.to}
+              to={l.to}
+              label={l.label}
+              icon={l.icon}
+              count={l.key === 'topProbas' ? counts.topProbas : null}
+            />
+          ))}
         {showAdmin && (
           <>
             <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Admin</p>

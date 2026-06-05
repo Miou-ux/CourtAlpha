@@ -82,7 +82,7 @@ export type LiveValueBetsResponse = {
   mode: string
   ev_min_pct: number | null
   snapshot_age_min: number | null
-  bankroll: { available_eur: number; equity_eur?: number; start_eur?: number }
+  bankroll: { available_eur: number; equity_eur?: number; start_eur?: number } | null
   picks: LiveValueBet[]
 }
 
@@ -346,12 +346,12 @@ export const api = {
   health: () => getJson<{ status: string; bettinghud_root: string }>('/api/health'),
   liveMeta: () => getJson<LiveMeta>('/api/live/meta'),
   liveMatches: () => getJson<LiveMatchesResponse>('/api/live/matches'),
-  liveValueBets: (opts?: { ev_min_pct?: number; mode?: 'value' | 'all' }) => {
+  liveValueBets: (opts?: { ev_min_pct?: number; mode?: 'value' | 'all' }, token?: string | null) => {
     const q = new URLSearchParams()
     if (opts?.ev_min_pct != null) q.set('ev_min_pct', String(opts.ev_min_pct))
     if (opts?.mode) q.set('mode', opts.mode)
     const qs = q.toString()
-    return getJson<LiveValueBetsResponse>(`/api/live/value-bets${qs ? `?${qs}` : ''}`)
+    return getJson<LiveValueBetsResponse>(`/api/live/value-bets${qs ? `?${qs}` : ''}`, token)
   },
   picksJour: () => getJson<PicksResponse>('/api/picks/jour'),
   picksTop5: () => getJson<PicksResponse>('/api/picks/top5'),

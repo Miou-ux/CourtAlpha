@@ -4,15 +4,16 @@ import type { LiveMeta, PortfolioSummary } from '../../api/client'
 type HeaderProps = {
   meta: LiveMeta | null
   portfolio: PortfolioSummary | null
+  showBankroll?: boolean
 }
 
-export function Header({ meta, portfolio }: HeaderProps) {
+export function Header({ meta, portfolio, showBankroll }: HeaderProps) {
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-panel/90 px-4 py-3 backdrop-blur-md md:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-4">
           <span className="hidden rounded-full border border-border bg-bg-elevated px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted md:inline">
-            Preprod
+            Prod
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -26,7 +27,7 @@ export function Header({ meta, portfolio }: HeaderProps) {
               />
             </>
           )}
-          {portfolio && (
+          {showBankroll && portfolio && (
             <Chip
               icon={<Wallet className="h-3.5 w-3.5" />}
               label="Dispo"

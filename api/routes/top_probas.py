@@ -3,10 +3,13 @@ from __future__ import annotations
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from api.auth_tokens import auth_required
 from api.bridge import bootstrap_bettinghud
+from api.routes.auth import current_user
 from api.serialize import to_jsonable
+from api.user_scope import require_authenticated_user
 from api.services.top_probas import (
     FAVORITE_EV_BAND_MAX_FRAC,
     FAVORITE_EV_BAND_MIN_FRAC,
@@ -26,7 +29,10 @@ def picks_top_probas(
     limit: int = Query(TOP_PROBAS_DISPLAY_LIMIT, ge=1, le=30),
     include_challengers: bool = Query(False, description="Inclure challengers (défaut = main draw 250+)"),
     ev_band: bool = Query(True, description="Bande EV favori +15 % à +100 %"),
+    user: dict | None = Depends(current_user),
 ) -> dict:
+    if auth_required():
+        require_authenticated_user(user)
     bootstrap_bettinghud()
     from scripts.daily_top_proba_store import load_today_matches_for_daily_top_proba
 

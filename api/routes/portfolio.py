@@ -12,56 +12,20 @@ from api.auth_tokens import auth_required
 from api.bridge import bootstrap_bettinghud
 from api.routes.auth import current_user
 from api.serialize import to_jsonable
+from api.user_scope import bankroll_for_user, require_authenticated_user, telegram_uid
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
 
 def _telegram_uid(user: dict | None) -> str | None:
-    tg = str((user or {}).get("telegram_user_id") or "").strip()
-    return tg or None
+    return telegram_uid(user)
 
 
-def _bankroll_snapshot(conn: sqlite3.Connection, telegram_uid: str | None) -> dict:
-    from scripts.bets_db import (
-        APP_KELLY_TRACKER_SOURCES,
-        compute_live_tracker_bankroll_eur,
-        compute_telegram_user_bankroll_eur,
-    )
-
-    if telegram_uid:
-        snap = compute_telegram_user_bankroll_eur(conn, telegram_uid)
-        snap["bankroll_mode"] = "telegram"
-        return snap
-
-    snap = compute_live_tracker_bankroll_eur(conn)
-    cur = conn.execute(
-        """
-        SELECT COALESCE(SUM(stake), 0)
-        FROM user_bets
-        WHERE COALESCE(TRIM(tracker_source), '') = ''
-          AND COALESCE(TRIM(status), '') = 'En cours'
-        """
-    )
-    legacy_open = float(cur.fetchone()[0] or 0.0)
-    cur2 = conn.execute(
-        """
-        SELECT COALESCE(SUM(profit), 0)
-        FROM user_bets
-        WHERE COALESCE(TRIM(tracker_source), '') = ''
-          AND COALESCE(TRIM(status), '') != 'En cours'
-        """
-    )
-    legacy_profit = float(cur2.fetchone()[0] or 0.0)
-    snap["committed_open_eur"] = float(snap.get("committed_open_eur", 0.0)) + legacy_open
-    snap["settled_profit_eur"] = float(snap.get("settled_profit_eur", 0.0)) + legacy_profit
-    snap["available_raw_eur"] = (
-        float(snap["start_eur"]) + float(snap["settled_profit_eur"]) - float(snap["committed_open_eur"])
-    )
-    snap["available_eur"] = float(snap["available_raw_eur"]) + float(snap.get("manual_adjust_eur", 0.0))
-    snap["equity_eur"] = float(snap["available_eur"]) + float(snap["committed_open_eur"])
-    snap["bankroll_mode"] = "mixed"
-    snap["kelly_sources"] = list(APP_KELLY_TRACKER_SOURCES)
-    return snap
+def _bankroll_snapshot(conn: sqlite3.Connection, user: dict | None) -> dict:
+    br = bankroll_for_user(conn, user)
+    if br is not None:
+        return br
+    raise HTTPException(status_code=401, detail="Authentification requise")
 
 
 def _fetch_bets_rows(conn: sqlite3.Connection, telegram_uid: str | None) -> list[dict]:
@@ -77,7 +41,7 @@ def _fetch_bets_rows(conn: sqlite3.Connection, telegram_uid: str | None) -> list
             (telegram_uid,),
         ).fetchall()
     else:
-        rows = conn.execute("SELECT * FROM user_bets ORDER BY id ASC").fetchall()
+        rows = []
     return [dict(r) for r in rows]
 
 
@@ -268,6 +232,8 @@ def _compute_analytics(bets: list[dict]) -> dict:
 
 @router.get("/summary")
 def portfolio_summary(user: dict | None = Depends(current_user)) -> dict:
+    if auth_required():
+        require_authenticated_user(user)
     bootstrap_bettinghud()
     from scripts.bets_db import DB_PATH_DEFAULT, ensure_user_bets_schema
 
@@ -275,12 +241,12 @@ def portfolio_summary(user: dict | None = Depends(current_user)) -> dict:
     conn = sqlite3.connect(DB_PATH_DEFAULT)
     try:
         ensure_user_bets_schema(conn)
-        bankroll = _bankroll_snapshot(conn, tg)
+        bankroll = _bankroll_snapshot(conn, user)
         bets = _fetch_bets_rows(conn, tg)
         analytics = _compute_analytics(bets)
         return to_jsonable(
             {
-                "scope": "telegram" if tg else "global",
+                "scope": "telegram" if tg else "unlinked",
                 "telegram_user_id": tg,
                 "bankroll": bankroll,
                 "n_bets_open": analytics["n_open"],
@@ -300,6 +266,8 @@ def portfolio_bets(
     sort: Literal["recent", "oldest", "profit_desc", "profit_asc"] = Query("recent"),
     user: dict | None = Depends(current_user),
 ) -> dict:
+    if auth_required():
+        require_authenticated_user(user)
     bootstrap_bettinghud()
     from scripts.bets_db import DB_PATH_DEFAULT, ensure_user_bets_schema
 
@@ -321,15 +289,7 @@ def portfolio_bets(
                 (tg,),
             ).fetchall()
         else:
-            rows = conn.execute(
-                """
-                SELECT id, date, match_name, bet_on, odds, stake, status, profit,
-                       tournament, tour, match_date, ev_at_bet, p_model, tracker_source,
-                       closing_odd, clv_score, segment_key, notes
-                FROM user_bets
-                ORDER BY id DESC
-                """
-            ).fetchall()
+            rows = []
         bets = [dict(r) for r in rows]
 
         if status and status != "Tous":
@@ -437,6 +397,8 @@ async def portfolio_reconcile(user: dict | None = Depends(current_user)) -> dict
 
 @router.get("/reconcile-status")
 def portfolio_reconcile_status(user: dict | None = Depends(current_user)) -> dict:
+    if auth_required():
+        require_authenticated_user(user)
     bootstrap_bettinghud()
     from scripts.bets_db import DB_PATH_DEFAULT
     from scripts.reconcile_bets import (
