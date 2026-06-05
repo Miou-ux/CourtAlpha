@@ -7,10 +7,10 @@ import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { FieldLabel, Input } from '../components/ui/input'
 
-type Mode = 'login' | 'forgot' | 'reset'
+type Mode = 'login' | 'forgot' | 'reset' | 'register'
 
 export function LoginPage() {
-  const { user, login } = useAuth()
+  const { user, login, register, registrationOpen } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const resetToken = searchParams.get('reset_token')?.trim() || ''
@@ -19,6 +19,9 @@ export function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [email, setEmail] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [registerPassword, setRegisterPassword] = useState('')
+  const [registerConfirm, setRegisterConfirm] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [message, setMessage] = useState<string | null>(null)
@@ -64,7 +67,9 @@ export function LoginPage() {
             ? 'Réinitialisation du mot de passe par e-mail.'
             : mode === 'reset'
               ? 'Choisissez un nouveau mot de passe.'
-              : 'Connexion à votre espace tennis — probas modèle, value bets et suivi portefeuille.'}
+              : mode === 'register'
+                ? 'Créez votre compte CourtAlpha — l’e-mail est obligatoire.'
+                : 'Connexion à votre espace tennis — probas modèle, value bets et suivi portefeuille.'}
         </p>
       </div>
       <Card variant="elevated" className="brand-ring p-5 md:p-6">
@@ -111,6 +116,105 @@ export function LoginPage() {
               className="w-full text-center text-sm text-muted transition hover:text-accent"
             >
               Mot de passe oublié ?
+            </button>
+            {registrationOpen && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('register')
+                  setError(null)
+                  setMessage(null)
+                }}
+                className="w-full text-center text-sm text-accent transition hover:underline"
+              >
+                Créer un compte
+              </button>
+            )}
+          </form>
+        )}
+
+        {mode === 'register' && (
+          <form
+            className="space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setError(null)
+              if (registerPassword !== registerConfirm) {
+                setError('Les mots de passe ne correspondent pas.')
+                return
+              }
+              if (!email.trim()) {
+                setError('E-mail obligatoire.')
+                return
+              }
+              setPending(true)
+              try {
+                await register({
+                  username: username.trim(),
+                  email: email.trim(),
+                  password: registerPassword,
+                  display_name: displayName.trim() || undefined,
+                })
+              } catch (err) {
+                setError(err instanceof Error ? err.message : String(err))
+              } finally {
+                setPending(false)
+              }
+            }}
+          >
+            <label className="block text-sm">
+              <FieldLabel>Identifiant</FieldLabel>
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                autoComplete="username"
+                placeholder="prenom_tennis"
+              />
+            </label>
+            <label className="block text-sm">
+              <FieldLabel>E-mail</FieldLabel>
+              <Input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                placeholder="vous@example.com"
+              />
+            </label>
+            <label className="block text-sm">
+              <FieldLabel>Nom affiché (optionnel)</FieldLabel>
+              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} autoComplete="name" />
+            </label>
+            <label className="block text-sm">
+              <FieldLabel>Mot de passe</FieldLabel>
+              <Input
+                type="password"
+                value={registerPassword}
+                onChange={(e) => setRegisterPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </label>
+            <label className="block text-sm">
+              <FieldLabel>Confirmer</FieldLabel>
+              <Input
+                type="password"
+                value={registerConfirm}
+                onChange={(e) => setRegisterConfirm(e.target.value)}
+                autoComplete="new-password"
+              />
+            </label>
+            {error && <p className="text-sm text-danger">{error}</p>}
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={pending || !username.trim() || !email.trim() || !registerPassword}
+              className="w-full"
+            >
+              {pending ? 'Création…' : 'Créer mon compte'}
+            </Button>
+            <button type="button" onClick={goLogin} className="w-full text-center text-sm text-muted transition hover:text-white">
+              ← Déjà un compte ? Se connecter
             </button>
           </form>
         )}

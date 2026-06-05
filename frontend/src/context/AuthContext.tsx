@@ -5,8 +5,10 @@ type AuthState = {
   user: AuthUser | null
   token: string | null
   authRequired: boolean
+  registrationOpen: boolean
   loading: boolean
   login: (username: string, password: string) => Promise<void>
+  register: (body: { username: string; email: string; password: string; display_name?: string }) => Promise<void>
   logout: () => Promise<void>
   updateProfile: (body: ProfileUpdatePayload) => Promise<void>
   uploadAvatar: (file: File) => Promise<void>
@@ -19,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY))
   const [user, setUser] = useState<AuthUser | null>(null)
   const [authRequired, setAuthRequired] = useState(false)
+  const [registrationOpen, setRegistrationOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async (tok: string | null) => {
@@ -26,9 +29,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const me = await api.authMe(null)
       setUser(null)
       setAuthRequired(me.auth_required)
+      setRegistrationOpen(!!me.registration_open)
       return
     }
     const me = await api.authMe(tok)
+    setRegistrationOpen(!!me.registration_open)
     if (me.authenticated && me.user) {
       setUser(me.user)
       setAuthRequired(me.auth_required)
@@ -58,6 +63,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.user)
   }, [])
 
+  const register = useCallback(
+    async (body: { username: string; email: string; password: string; display_name?: string }) => {
+      const res = await api.authRegister(body)
+      localStorage.setItem(TOKEN_KEY, res.token)
+      setToken(res.token)
+      setUser(res.user)
+    },
+    [],
+  )
+
   const logout = useCallback(async () => {
     if (token) await api.authLogout(token)
     localStorage.removeItem(TOKEN_KEY)
@@ -84,8 +99,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo(
-    () => ({ user, token, authRequired, loading, login, logout, updateProfile, uploadAvatar }),
-    [user, token, authRequired, loading, login, logout, updateProfile, uploadAvatar],
+    () => ({
+      user,
+      token,
+      authRequired,
+      registrationOpen,
+      loading,
+      login,
+      register,
+      logout,
+      updateProfile,
+      uploadAvatar,
+    }),
+    [user, token, authRequired, registrationOpen, loading, login, register, logout, updateProfile, uploadAvatar],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

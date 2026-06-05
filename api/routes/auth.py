@@ -33,6 +33,13 @@ class PasswordResetConfirm(BaseModel):
     password: str = Field(..., min_length=4)
 
 
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=32)
+    email: str = Field(..., min_length=5, max_length=254)
+    password: str = Field(..., min_length=4)
+    display_name: str | None = Field(default=None, max_length=80)
+
+
 def _bearer_token(authorization: str | None = Header(default=None)) -> str | None:
     if not authorization:
         return None
@@ -76,9 +83,41 @@ def auth_login(body: LoginRequest) -> dict:
 
 @router.get("/me")
 def auth_me(user: dict | None = Depends(current_user)) -> dict:
+    bootstrap_bettinghud()
+    from scripts.web_auth import registration_enabled
+
     if user:
-        return {"ok": True, "authenticated": True, "user": user, "auth_required": auth_required()}
-    return {"ok": True, "authenticated": False, "auth_required": auth_required()}
+        return {
+            "ok": True,
+            "authenticated": True,
+            "user": user,
+            "auth_required": auth_required(),
+            "registration_open": registration_enabled(),
+        }
+    return {
+        "ok": True,
+        "authenticated": False,
+        "auth_required": auth_required(),
+        "registration_open": registration_enabled(),
+    }
+
+
+@router.post("/register")
+def auth_register(body: RegisterRequest) -> dict:
+    bootstrap_bettinghud()
+    from scripts.web_auth import register_web_user
+
+    try:
+        user = register_web_user(
+            body.username.strip(),
+            body.password,
+            body.email.strip(),
+            display_name=body.display_name.strip() if body.display_name else None,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    token = issue_token(user)
+    return {"ok": True, "token": token, "user": user}
 
 
 @router.post("/logout")
