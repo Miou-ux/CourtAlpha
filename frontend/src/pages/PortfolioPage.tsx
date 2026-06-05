@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import { api, type BetRow, type PortfolioSummary } from '../api/client'
+import { BankrollAdjustModal } from '../components/BankrollAdjustModal'
 import { Badge } from '../components/Badge'
 import { EmptyState } from '../components/EmptyState'
 import { PageHero } from '../components/PageHero'
@@ -75,6 +76,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('Tous')
   const [minStake, setMinStake] = useState(0)
   const [sort, setSort] = useState<(typeof SORT_OPTIONS)[number]['value']>('recent')
+  const [brAdjustMode, setBrAdjustMode] = useState<'add' | 'withdraw' | null>(null)
 
   const summaryQ = useQuery({
     queryKey: ['portfolio-summary', token],
@@ -106,6 +108,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ['portfolio-summary'] })
     void qc.invalidateQueries({ queryKey: ['portfolio-bets'] })
+    void qc.invalidateQueries({ queryKey: ['live-value-bets'] })
     onRefresh?.()
   }
 
@@ -134,7 +137,10 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
   const scopeHint =
     summary?.scope === 'telegram'
       ? `Portefeuille Telegram @${user?.telegram_username ?? summary.telegram_user_id}`
-      : 'Portefeuille global (tous les paris SQLite)'
+      : 'Liez Telegram dans Profil pour votre bankroll personnelle'
+
+  const canAdjustBankroll = !!user && summary?.scope === 'telegram' && !!br
+  const bankrollAvail = br?.available_eur ?? 0
 
   return (
     <div className="space-y-6">
@@ -160,12 +166,49 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
 
       {loading && !summary ? (
         <p className="text-sm text-muted">Chargement du portefeuille…</p>
-      ) : !summary || summary.n_total === 0 ? (
-        <EmptyState
-          title="Aucun pari enregistré"
-          hint="Confirme un pick depuis Paris du jour ou le Live Tracker pour alimenter le portefeuille."
-        />
       ) : (
+        <>
+          {br && (
+            <Card variant="default" className="p-4">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs uppercase tracking-wide text-muted">Bankroll</p>
+                {canAdjustBankroll && (
+                  <div className="flex gap-2">
+                    <Button variant="success" size="sm" onClick={() => setBrAdjustMode('add')}>
+                      Ajouter
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setBrAdjustMode('withdraw')}>
+                      Retirer
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <StatTile label="BR dispo" value={`${bankrollAvail.toFixed(2)} €`} className="px-4 py-3" highlight />
+                <StatTile label="Référence" value={`${br.start_eur?.toFixed(2) ?? '—'} €`} className="px-4 py-3" />
+                <StatTile label="Engagé" value={`${br.committed_open_eur.toFixed(2)} €`} className="px-4 py-3" />
+                <StatTile label="Capital total" value={`${br.equity_eur.toFixed(2)} €`} className="px-4 py-3" />
+              </div>
+              {br.manual_adjust_eur != null && Math.abs(br.manual_adjust_eur) > 1e-6 && (
+                <p className="mt-2 text-xs text-muted">
+                  Ajustement manuel cumulé : {br.manual_adjust_eur >= 0 ? '+' : ''}
+                  {br.manual_adjust_eur.toFixed(2)} €
+                </p>
+              )}
+              {user && summary?.scope !== 'telegram' && (
+                <p className="mt-2 text-xs text-muted">
+                  Associez votre compte Telegram dans Profil pour ajouter ou retirer des fonds.
+                </p>
+              )}
+            </Card>
+          )}
+
+          {!summary || summary.n_total === 0 ? (
+            <EmptyState
+              title="Aucun pari enregistré"
+              hint="Confirme un pick depuis Paris du jour ou le Live Tracker pour alimenter le portefeuille."
+            />
+          ) : (
         <>
           {kelly && kelly.n_bets > 0 && (
             <Card variant="default" className="p-4">
@@ -459,7 +502,17 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
             </div>
           </Card>
         </>
+          )}
+        </>
       )}
+
+      <BankrollAdjustModal
+        open={brAdjustMode != null}
+        mode={brAdjustMode ?? 'add'}
+        availableEur={bankrollAvail}
+        onClose={() => setBrAdjustMode(null)}
+        onSuccess={invalidate}
+      />
     </div>
   )
 }

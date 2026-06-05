@@ -311,8 +311,74 @@ def portfolio_bets(
         conn.close()
 
 
+class BankrollAdjustRequest(BaseModel):
+    amount_eur: float = Field(
+        ...,
+        description="Montant à ajouter (>0) ou retirer (<0) de la bankroll disponible.",
+    )
+
+
 class BetSettleRequest(BaseModel):
     status: Literal["Gagné", "Perdu"] = Field(...)
+
+
+@router.post("/bankroll/adjust")
+def portfolio_bankroll_adjust(
+    body: BankrollAdjustRequest,
+    user: dict | None = Depends(current_user),
+) -> dict:
+    """Ajoute ou retire des fonds via l'ajustement manuel Kelly (dépôt/retrait)."""
+    user = require_authenticated_user(user)
+    tg = _telegram_uid(user)
+    if not tg:
+        raise HTTPException(
+            status_code=400,
+            detail="Liez votre compte Telegram dans Profil pour gérer la bankroll.",
+        )
+
+    amount = float(body.amount_eur)
+    if abs(amount) < 1e-9:
+        raise HTTPException(status_code=400, detail="Montant nul.")
+    if abs(amount) > 100_000.0:
+        raise HTTPException(status_code=400, detail="Montant hors limites (±100 000 €).")
+
+    bootstrap_bettinghud()
+    from scripts.bets_db import (
+        DB_PATH_DEFAULT,
+        compute_telegram_user_bankroll_eur,
+        ensure_user_bets_schema,
+        get_telegram_user_manual_adjust_eur,
+        set_telegram_user_manual_adjust_eur,
+    )
+
+    conn = sqlite3.connect(DB_PATH_DEFAULT)
+    try:
+        ensure_user_bets_schema(conn)
+        before = compute_telegram_user_bankroll_eur(conn, tg)
+        available_before = float(before["available_eur"])
+        if amount < 0 and available_before + amount < -1e-6:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Retrait impossible : BR disponible {available_before:.2f} €.",
+            )
+
+        prev_adj = get_telegram_user_manual_adjust_eur(conn, tg)
+        new_adj = float(prev_adj) + amount
+        set_telegram_user_manual_adjust_eur(conn, tg, new_adj)
+        conn.commit()
+        bankroll = compute_telegram_user_bankroll_eur(conn, tg)
+        bankroll["bankroll_mode"] = "telegram"
+        return to_jsonable(
+            {
+                "ok": True,
+                "amount_eur": amount,
+                "manual_adjust_eur": new_adj,
+                "manual_adjust_eur_before": float(prev_adj),
+                "bankroll": bankroll,
+            }
+        )
+    finally:
+        conn.close()
 
 
 @router.patch("/bets/{bet_id}")

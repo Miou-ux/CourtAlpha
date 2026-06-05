@@ -1,5 +1,18 @@
 # Changelog — CourtAlpha
 
+## 2026-06-05 (prod) — Auth publique, bankroll, deploy UI
+
+| Livrable | Détail |
+|----------|--------|
+| Pages publiques | `/live`, `/paris`, `/top5` sans login ; portfolio / top-probas / admin protégés |
+| Bankroll | Toujours liée au compte connecté ; `bankroll: null` pour les visiteurs |
+| Ajustement BR | `POST /api/portfolio/bankroll/adjust` + modal Portefeuille (ajout / retrait €) |
+| Sidebar | Lien **Connexion** sous le logo (visiteurs) |
+| Deploy frontend | `deploy/deploy_frontend.ps1` — build + scp + fix permissions nginx (anti-403) |
+| URLs PROD | `https://courtalpha.tech/` · Streamlit legacy → `https://admin.courtalpha.tech/` |
+
+---
+
 ## 2026-06-05 (session UI) — Logo, charte, EV lisible, typo, survol tuiles
 
 Synthèse des évolutions UI/UX après le rebrand initial (même journée).

@@ -68,9 +68,23 @@ export function Sidebar({ counts }: SidebarProps) {
 
   return (
     <aside className="flex flex-col border-r border-border bg-bg-elevated px-3 py-5 md:min-h-screen">
-      <div className="mb-6 flex justify-center px-1">
+      <div className="mb-4 flex justify-center px-1">
         <CourtAlphaLogo size="xl" className="w-full" />
       </div>
+      {!user && (
+        <NavLink
+          to="/login"
+          className={({ isActive }) =>
+            cn(
+              'mb-4 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition',
+              isActive ? 'bg-accent/10 text-white' : 'text-muted hover:bg-panel hover:text-white',
+            )
+          }
+        >
+          <LogIn className="h-4 w-4" />
+          Connexion
+        </NavLink>
+      )}
       <nav className="space-y-1">
         {publicLinks.map((l) => (
           <NavItem
@@ -100,54 +114,39 @@ export function Sidebar({ counts }: SidebarProps) {
           </>
         )}
       </nav>
-      <div className="mt-auto pt-6">
-        {user ? (
-          <div className="space-y-1">
-            <NavLink
-              to="/profile"
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition',
-                  isActive ? 'bg-accent/10 text-white' : 'text-muted hover:bg-panel hover:text-white',
-                )
-              }
-            >
-              <UserAvatar user={user} size="sm" />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2">
-                  <span className="block truncate font-medium text-white">{user.display_name}</span>
-                  {showAdmin && <Badge tone="accent">{adminRoleLabel(user)}</Badge>}
-                </span>
-                <span className="block truncate text-[11px] text-muted">
-                  {user.telegram_username ? `@${user.telegram_username}` : `@${user.username}`}
-                </span>
-              </span>
-              <User className="h-4 w-4 shrink-0 opacity-60" />
-            </NavLink>
-            <button
-              type="button"
-              onClick={() => void logout()}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs text-muted transition hover:bg-panel hover:text-white"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Déconnexion
-            </button>
-          </div>
-        ) : (
+      {user && (
+        <div className="mt-auto space-y-1 pt-6">
           <NavLink
-            to="/login"
+            to="/profile"
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition',
+                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition',
                 isActive ? 'bg-accent/10 text-white' : 'text-muted hover:bg-panel hover:text-white',
               )
             }
           >
-            <LogIn className="h-4 w-4" />
-            Connexion
+            <UserAvatar user={user} size="sm" />
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2">
+                <span className="block truncate font-medium text-white">{user.display_name}</span>
+                {showAdmin && <Badge tone="accent">{adminRoleLabel(user)}</Badge>}
+              </span>
+              <span className="block truncate text-[11px] text-muted">
+                {user.telegram_username ? `@${user.telegram_username}` : `@${user.username}`}
+              </span>
+            </span>
+            <User className="h-4 w-4 shrink-0 opacity-60" />
           </NavLink>
-        )}
-      </div>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs text-muted transition hover:bg-panel hover:text-white"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Déconnexion
+          </button>
+        </div>
+      )}
     </aside>
   )
 }

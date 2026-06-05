@@ -39,12 +39,21 @@ Query : `limit` (déf. 15), `include_challengers` (déf. false), `ev_band` (déf
 
 ### `GET /api/portfolio/summary`
 Bankroll Kelly + analytics portefeuille (P/L, ROI, winrate, courbes, CLV).  
-Bearer optionnel : si `telegram_user_id` en profil, scope utilisateur ; sinon portefeuille global.
+**Bearer requis** si `BETTINGHUD_WEB_AUTH_REQUIRED=1` (PROD). Scope `telegram_user_id` du compte connecté.
 
 ### `GET /api/portfolio/bets`
-Paris SQLite avec filtres.
+Paris SQLite avec filtres. **Bearer requis** en PROD.
 
 Query : `limit` (déf. 500), `status`, `min_stake`, `sort` (`recent|oldest|profit_desc|profit_asc`).
+
+### `POST /api/portfolio/bankroll/adjust`
+Ajustement manuel cumulé de la bankroll Telegram (dépôt / retrait). **Bearer requis.**
+
+```json
+{ "amount_eur": 25.0 }
+```
+
+Montant positif = ajout, négatif = retrait. Retour : bankroll recalculée + `manual_adjust_eur`.
 
 ### `PATCH /api/portfolio/bets/{bet_id}`
 Règlement manuel d'un pari en cours (`Gagné` / `Perdu`).
@@ -118,7 +127,12 @@ Diagnostic ops : snapshot, CSV prematch, daemon portfolio, fraîcheur données.
 Retour : `{ "token", "user" }` — stocker côté client (Bearer).
 
 ### `GET /api/auth/me`
-Session courante. Si `BETTINGHUD_WEB_AUTH_REQUIRED=1`, 401 sans token.
+Session courante. **200** avec `user: null` si anonyme (pages publiques). En PROD, portfolio et endpoints sensibles exigent Bearer.
+
+### Pages publiques (PROD, `BETTINGHUD_WEB_AUTH_REQUIRED=1`)
+
+Sans token : `/live`, `/paris`, `/top5` + `GET /api/live/*`, `GET /api/picks/jour`, `GET /api/picks/top5`.  
+Pas de bankroll affichée (`bankroll: null` sur value-bets). Paris interactifs → login.
 
 ### `POST /api/auth/logout`
 Révoque le token Bearer.

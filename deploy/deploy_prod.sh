@@ -25,4 +25,9 @@ ssh "$HOST" "test -f ${REMOTE}/.env || cp ${REMOTE}/.env.prod.example ${REMOTE}/
 echo "==> systemd courtalpha-api"
 ssh "$HOST" "sudo cp ${REMOTE}/deploy/systemd/courtalpha-api.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable courtalpha-api && sudo systemctl restart courtalpha-api"
 
+if ssh "$HOST" "test -d ${REMOTE}/frontend/dist"; then
+  echo "==> permissions frontend/dist (nginx)"
+  ssh "$HOST" "find ${REMOTE}/frontend/dist -type d -exec chmod 755 {} +; find ${REMOTE}/frontend/dist -type f -exec chmod 644 {} +"
+fi
+
 echo "==> Done. Vérif: curl -s http://127.0.0.1:8000/api/health"

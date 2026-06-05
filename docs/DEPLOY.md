@@ -12,7 +12,7 @@ CourtAlpha vit **à côté** de BettingHUD :
 | Port | Service |
 |------|---------|
 | **https://courtalpha.tech/** | CourtAlpha (React + `/api`) |
-| **https://courtalpha.tech:8502/** | BettingHUD Streamlit (legacy) |
+| **https://admin.courtalpha.tech/** | BettingHUD Streamlit (legacy) |
 
 ## Première installation
 
@@ -21,19 +21,19 @@ CourtAlpha vit **à côté** de BettingHUD :
 bash deploy/deploy_prod.sh bettinghud
 
 # 2. Build frontend (sur PC PREPROD avec Node)
-cd frontend && npm ci && npm run build
-scp -r frontend/dist bettinghud:/opt/courtalpha/frontend/
+# PowerShell :
+#   cd O:\Miouppy\Documents\CourtAlpha
+#   .\deploy\deploy_frontend.ps1
+# Git Bash :
+#   bash deploy/deploy_frontend.sh bettinghud
 
-# 3. Nginx unifié (depuis repo BettingHUD)
-ssh bettinghud
-sudo cp /opt/bettinghud/deploy/nginx/bettinghud.conf /etc/nginx/sites-available/bettinghud
-sudo nginx -t && sudo systemctl reload nginx
-sudo ufw allow 8502/tcp
+# 3. Nginx PROD (BettingHUD repo) — voir deploy/nginx/setup_admin_subdomain.sh
+#    DNS requis : admin.courtalpha.tech → IP serveur
 
 # 4. Vérifications
-curl -s http://127.0.0.1:8000/api/health
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1/
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8502/
+curl -s https://courtalpha.tech/api/health
+curl -s -o /dev/null -w '%{http_code}\n' https://courtalpha.tech/
+curl -s -o /dev/null -w '%{http_code}\n' https://admin.courtalpha.tech/
 ```
 
 ## Mise à jour (PROD — git pull)
@@ -47,13 +47,21 @@ git pull --ff-only
 sudo systemctl restart courtalpha-api
 ```
 
-Si l’UI React a changé, rebuild **sur PC PREPROD** puis copie du `dist/` (non versionné) :
+Si l’UI React a changé, rebuild **sur PC PREPROD** puis déploiement automatisé (build + scp + **permissions nginx**) :
 
 ```powershell
-cd O:\Miouppy\Documents\CourtAlpha\frontend
-npm run build
-scp -r dist bettinghud:/opt/courtalpha/frontend/
+cd O:\Miouppy\Documents\CourtAlpha
+.\deploy\deploy_frontend.ps1
+# dist déjà buildé :
+.\deploy\deploy_frontend.ps1 -SkipBuild
 ```
+
+```bash
+bash deploy/deploy_frontend.sh bettinghud
+bash deploy/deploy_frontend.sh bettinghud --skip-build
+```
+
+> **Ne pas** utiliser `scp -r dist ...` seul : sous Windows, `scp` crée `dist/` en `700` et nginx renvoie **403**. Le script appelle `deploy/fix_frontend_permissions.sh` sur le serveur après chaque upload.
 
 > `.env` et `frontend/dist/` ne sont **pas** dans git — ils restent sur le SD entre les pulls.
 

@@ -6,8 +6,8 @@ Interface produit **CourtAlpha** (live, portfolio, top probas, backtest) branch√
 
 | URL | App |
 |-----|-----|
-| `http://IP/` | CourtAlpha (React + `/api`) |
-| `http://IP:8502/` | BettingHUD Streamlit (legacy) |
+| `https://courtalpha.tech/` | CourtAlpha (React + `/api`) |
+| `https://admin.courtalpha.tech/` | BettingHUD Streamlit (legacy) |
 
 Voir `docs/DEPLOY.md` et `deploy/deploy_prod.sh`.
 

@@ -104,6 +104,7 @@ export type PortfolioSummary = {
     settled_profit_eur: number
     committed_open_eur: number
     start_eur?: number
+    manual_adjust_eur?: number
     bankroll_mode?: string
   }
   n_bets_open: number
@@ -386,6 +387,14 @@ export const api = {
       '/api/portfolio/reconcile-status',
       token,
     ),
+  portfolioBankrollAdjust: (amount_eur: number, token?: string | null) =>
+    postJson<{
+      ok: boolean
+      amount_eur: number
+      manual_adjust_eur: number
+      manual_adjust_eur_before: number
+      bankroll: PortfolioSummary['bankroll']
+    }>('/api/portfolio/bankroll/adjust', { amount_eur }, token),
   createBet: (payload: BetCreatePayload, token?: string | null) =>
     postJson<{ ok: boolean; bet_id: number }>('/api/bets', payload, token),
   backtestYears: (token: string | null) => getJson<{ years: number[]; count: number }>('/api/backtest/years', token),
