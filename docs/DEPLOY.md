@@ -11,8 +11,8 @@ CourtAlpha vit **à côté** de BettingHUD :
 
 | Port | Service |
 |------|---------|
-| **80** | CourtAlpha — nginx → `frontend/dist` + `/api` → uvicorn `:8000` |
-| **8502** | BettingHUD — nginx → Streamlit `:8501` |
+| **https://courtalpha.tech/** | CourtAlpha (React + `/api`) |
+| **https://courtalpha.tech:8502/** | BettingHUD Streamlit (legacy) |
 
 ## Première installation
 
