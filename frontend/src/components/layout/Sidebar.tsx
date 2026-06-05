@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Activity, BarChart3, CalendarDays, LayoutGrid, LineChart, LogIn, LogOut, Settings, Trophy, User, Wallet } from 'lucide-react'
+import { Activity, BarChart3, CalendarDays, LayoutGrid, LineChart, LogIn, LogOut, Settings, Trophy, User, Wallet, X } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { adminRoleLabel, isAdmin } from '../../lib/auth'
 import { useAuth } from '../../context/AuthContext'
@@ -9,6 +9,8 @@ import { UserAvatar } from '../UserAvatar'
 
 type SidebarProps = {
   counts: { live: number; paris: number; top5: number; topProbas?: number }
+  mobileOpen?: boolean
+  onNavigate?: () => void
 }
 
 const publicLinks = [
@@ -33,15 +35,18 @@ function NavItem({
   label,
   icon: Icon,
   count,
+  onNavigate,
 }: {
   to: string
   label: string
   icon: typeof LayoutGrid
   count?: number | null
+  onNavigate?: () => void
 }) {
   return (
     <NavLink
       to={to}
+      onClick={onNavigate}
       className={({ isActive }) =>
         cn(
           'flex items-center justify-between rounded-xl px-3 py-2 text-sm transition',
@@ -62,18 +67,33 @@ function NavItem({
   )
 }
 
-export function Sidebar({ counts }: SidebarProps) {
+export function Sidebar({ counts, mobileOpen = false, onNavigate }: SidebarProps) {
   const { user, logout } = useAuth()
   const showAdmin = isAdmin(user)
 
   return (
-    <aside className="flex flex-col border-r border-border bg-bg-elevated px-3 py-5 md:min-h-screen">
-      <div className="mb-4 flex justify-center px-1">
-        <CourtAlphaLogo size="xl" className="w-full" />
+    <aside
+      className={cn(
+        'fixed inset-y-0 left-0 z-40 flex w-[min(280px,88vw)] flex-col border-r border-border bg-bg-elevated px-3 py-4 transition-transform duration-200 ease-out md:static md:z-auto md:w-auto md:min-h-screen md:translate-x-0 md:py-5',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+      )}
+    >
+      <div className="mb-4 flex items-center justify-between gap-2 px-1">
+        <CourtAlphaLogo size="lg" className="max-h-24 w-full md:hidden" />
+        <CourtAlphaLogo size="xl" className="hidden w-full md:block" />
+        <button
+          type="button"
+          onClick={onNavigate}
+          className="rounded-lg p-2 text-muted transition hover:bg-panel hover:text-white md:hidden"
+          aria-label="Fermer le menu"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
       {!user && (
         <NavLink
           to="/login"
+          onClick={onNavigate}
           className={({ isActive }) =>
             cn(
               'mb-4 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition',
@@ -85,7 +105,7 @@ export function Sidebar({ counts }: SidebarProps) {
           Connexion
         </NavLink>
       )}
-      <nav className="space-y-1">
+      <nav className="flex-1 space-y-1 overflow-y-auto">
         {publicLinks.map((l) => (
           <NavItem
             key={l.to}
@@ -93,6 +113,7 @@ export function Sidebar({ counts }: SidebarProps) {
             label={l.label}
             icon={l.icon}
             count={counts[l.key]}
+            onNavigate={onNavigate}
           />
         ))}
         {user &&
@@ -103,21 +124,23 @@ export function Sidebar({ counts }: SidebarProps) {
               label={l.label}
               icon={l.icon}
               count={l.key === 'topProbas' ? counts.topProbas : null}
+              onNavigate={onNavigate}
             />
           ))}
         {showAdmin && (
           <>
             <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Admin</p>
             {adminLinks.map((l) => (
-              <NavItem key={l.to} to={l.to} label={l.label} icon={l.icon} />
+              <NavItem key={l.to} to={l.to} label={l.label} icon={l.icon} onNavigate={onNavigate} />
             ))}
           </>
         )}
       </nav>
       {user && (
-        <div className="mt-auto space-y-1 pt-6">
+        <div className="mt-auto space-y-1 border-t border-border pt-4">
           <NavLink
             to="/profile"
+            onClick={onNavigate}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition',
@@ -139,7 +162,10 @@ export function Sidebar({ counts }: SidebarProps) {
           </NavLink>
           <button
             type="button"
-            onClick={() => void logout()}
+            onClick={() => {
+              onNavigate?.()
+              void logout()
+            }}
             className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs text-muted transition hover:bg-panel hover:text-white"
           >
             <LogOut className="h-3.5 w-3.5" />

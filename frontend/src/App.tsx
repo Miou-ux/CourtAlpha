@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Header } from './components/layout/Header'
+import { MobileBottomNav } from './components/layout/MobileBottomNav'
 import { Sidebar } from './components/layout/Sidebar'
 import { useDashboardData } from './hooks/useDashboardData'
 import { BacktestPage } from './pages/BacktestPage'
@@ -108,7 +110,19 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
 function App() {
   const location = useLocation()
   const data = useDashboardData()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const isLogin = location.pathname === '/login'
+
+  useEffect(() => {
+    setMobileNavOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    document.body.style.overflow = mobileNavOpen ? 'hidden' : ''
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileNavOpen])
 
   if (isLogin) {
     return (
@@ -122,15 +136,33 @@ function App() {
 
   return (
     <div className="min-h-screen bg-bg text-white md:grid md:grid-cols-[280px_1fr]">
-      <Sidebar counts={{ live: data.matches.length, paris: data.picks.length, top5: data.top5.length }} />
-      <div className="min-w-0">
-        <Header meta={data.meta} portfolio={data.portfolio} showBankroll={!!data.user} />
-        <main className="px-4 py-5 md:px-6 md:py-6">
+      {mobileNavOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-black/60 md:hidden"
+          aria-label="Fermer le menu"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+      <Sidebar
+        counts={{ live: data.matches.length, paris: data.picks.length, top5: data.top5.length }}
+        mobileOpen={mobileNavOpen}
+        onNavigate={() => setMobileNavOpen(false)}
+      />
+      <div className="flex min-h-screen min-w-0 flex-col">
+        <Header
+          meta={data.meta}
+          portfolio={data.portfolio}
+          showBankroll={!!data.user}
+          onMenuClick={() => setMobileNavOpen(true)}
+        />
+        <main className="flex-1 px-3 py-4 pb-20 sm:px-4 sm:py-5 md:px-6 md:py-6 md:pb-6">
           {data.error && (
             <p className="mb-4 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">{data.error}</p>
           )}
           <AppRoutes data={data} />
         </main>
+        <MobileBottomNav onMenuClick={() => setMobileNavOpen(true)} />
       </div>
     </div>
   )

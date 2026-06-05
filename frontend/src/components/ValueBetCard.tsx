@@ -67,7 +67,7 @@ export function ValueBetCard({ pick, bankrollAvail, onBet }: ValueBetCardProps) 
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4">
+      <div className="mt-4 grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-3">
         <ProbaDisplay pct={pModelPct} label="Proba modèle" size="lg" />
         <Metric label="Mise reco" value={`${kelly.eur.toFixed(2)} €`} variant="stake" />
         <Metric label="Cote" value={`@${customOdd.toFixed(2)}`} />
