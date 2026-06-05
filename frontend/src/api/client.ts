@@ -404,6 +404,12 @@ export const api = {
   systemStatus: (token: string | null) => getJson<SystemStatusResponse>('/api/system/status', token),
   authLogin: (username: string, password: string) =>
     postJson<{ ok: boolean; token: string; user: AuthUser }>('/api/auth/login', { username, password }),
+  authPasswordResetRequest: (email: string) =>
+    postJson<{ ok: boolean; message: string }>('/api/auth/password-reset/request', { email }),
+  authPasswordResetValidate: (token: string) =>
+    getJson<{ ok: boolean; valid: boolean }>(`/api/auth/password-reset/validate?token=${encodeURIComponent(token)}`),
+  authPasswordResetConfirm: (token: string, password: string) =>
+    postJson<{ ok: boolean; message: string }>('/api/auth/password-reset/confirm', { token, password }),
   authMe: (token: string | null) => getJson<{ ok: boolean; authenticated: boolean; auth_required: boolean; user?: AuthUser }>('/api/auth/me', token),
   authLogout: (token: string) => postJson<{ ok: boolean }>('/api/auth/logout', {}, token),
   authUpdateProfile: (token: string, body: ProfileUpdatePayload) =>

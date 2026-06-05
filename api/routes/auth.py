@@ -24,6 +24,15 @@ class ProfileUpdateRequest(BaseModel):
     clear_telegram: bool = False
 
 
+class PasswordResetRequest(BaseModel):
+    email: str = Field(..., min_length=3)
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str = Field(..., min_length=8)
+    password: str = Field(..., min_length=4)
+
+
 def _bearer_token(authorization: str | None = Header(default=None)) -> str | None:
     if not authorization:
         return None
@@ -76,6 +85,36 @@ def auth_me(user: dict | None = Depends(current_user)) -> dict:
 def auth_logout(authorization: str | None = Header(default=None)) -> dict:
     revoke_token(_bearer_token(authorization))
     return {"ok": True}
+
+
+@router.post("/password-reset/request")
+def auth_password_reset_request(body: PasswordResetRequest) -> dict:
+    bootstrap_bettinghud()
+    from scripts.web_auth import request_password_reset
+
+    ok, message = request_password_reset(body.email.strip(), reset_path="/login")
+    if not ok:
+        raise HTTPException(status_code=400, detail=message)
+    return {"ok": True, "message": message}
+
+
+@router.get("/password-reset/validate")
+def auth_password_reset_validate(token: str) -> dict:
+    bootstrap_bettinghud()
+    from scripts.web_password_reset import validate_reset_token
+
+    return {"ok": True, "valid": validate_reset_token(token) is not None}
+
+
+@router.post("/password-reset/confirm")
+def auth_password_reset_confirm(body: PasswordResetConfirm) -> dict:
+    bootstrap_bettinghud()
+    from scripts.web_auth import complete_password_reset
+
+    ok, message = complete_password_reset(body.token.strip(), body.password)
+    if not ok:
+        raise HTTPException(status_code=400, detail=message)
+    return {"ok": True, "message": message}
 
 
 @router.patch("/profile")

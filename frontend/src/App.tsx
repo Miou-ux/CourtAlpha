@@ -16,6 +16,15 @@ import { Top5Page } from './pages/Top5Page'
 import { TopProbasPage } from './pages/TopProbasPage'
 import { TrackingPage } from './pages/TrackingPage'
 
+function ResetTokenRedirect() {
+  const location = useLocation()
+  const token = new URLSearchParams(location.search).get('reset_token')
+  if (token && location.pathname !== '/login') {
+    return <Navigate to={`/login?reset_token=${encodeURIComponent(token)}`} replace />
+  }
+  return null
+}
+
 function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
   return (
     <Routes>
@@ -127,6 +136,7 @@ function App() {
   if (isLogin) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10 text-white">
+        <ResetTokenRedirect />
         <div className="w-full max-w-md">
           <AppRoutes data={data} />
         </div>
@@ -136,6 +146,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-bg text-white md:grid md:grid-cols-[280px_1fr]">
+      <ResetTokenRedirect />
       {mobileNavOpen && (
         <button
           type="button"
