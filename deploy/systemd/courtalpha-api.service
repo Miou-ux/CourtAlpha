@@ -1,0 +1,18 @@
+[Unit]
+Description=CourtAlpha FastAPI (UI React + API)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/courtalpha
+EnvironmentFile=-/opt/courtalpha/.env
+Environment=BETTINGHUD_HEADLESS=1
+ExecStart=/opt/bettinghud/venv/bin/python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

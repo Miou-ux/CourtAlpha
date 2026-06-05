@@ -1,0 +1,59 @@
+# Déploiement PROD — CourtAlpha
+
+CourtAlpha vit **à côté** de BettingHUD :
+
+```text
+/opt/bettinghud/     moteur (data, models, venv, cron, Telegram…)
+/opt/courtalpha/     UI React + API FastAPI
+```
+
+## URLs
+
+| Port | Service |
+|------|---------|
+| **80** | CourtAlpha — nginx → `frontend/dist` + `/api` → uvicorn `:8000` |
+| **8502** | BettingHUD — nginx → Streamlit `:8501` |
+
+## Première installation
+
+```bash
+# 1. Sync code (depuis PC, Git Bash ou WSL)
+bash deploy/deploy_prod.sh bettinghud
+
+# 2. Build frontend (sur PC PREPROD avec Node)
+cd frontend && npm ci && npm run build
+scp -r frontend/dist bettinghud:/opt/courtalpha/frontend/
+
+# 3. Nginx unifié (depuis repo BettingHUD)
+ssh bettinghud
+sudo cp /opt/bettinghud/deploy/nginx/bettinghud.conf /etc/nginx/sites-available/bettinghud
+sudo nginx -t && sudo systemctl reload nginx
+sudo ufw allow 8502/tcp
+
+# 4. Vérifications
+curl -s http://127.0.0.1:8000/api/health
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1/
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8502/
+```
+
+## Mise à jour
+
+```bash
+bash deploy/deploy_prod.sh bettinghud
+# rebuild frontend si changement UI
+sudo systemctl restart courtalpha-api
+```
+
+## `.env` PROD
+
+`/opt/courtalpha/.env` (modèle : `.env.prod.example`) :
+
+- `BETTINGHUD_ROOT=/opt/bettinghud`
+- `BETTINGHUD_ENV=prod`
+- `BETTINGHUD_WEB_AUTH_REQUIRED=1`
+
+Comptes web : `/opt/bettinghud/data/web_users.json` (partagés avec Streamlit).
+
+## GitHub
+
+Repo : `https://github.com/Miou-ux/CourtAlpha`

@@ -1,0 +1,119 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Montserrat:wght@600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #121212;
+  --color-bg-elevated: #1a1c23;
+  --color-panel: #1e2128;
+  --color-border: #2a3040;
+  --color-muted: #8b93a7;
+  --color-accent: #c8f135;
+  --color-brand: #c8f135;
+  --color-teal: #00d4c8;
+  --color-cyan: #00d4ff;
+  --color-navy: #1a2b48;
+  --color-success: #00d4c8;
+  --color-proba: #00d4ff;
+  --color-stake: #ffd93d;
+  --color-danger: #ff4757;
+  --color-warning: #ffd93d;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Montserrat", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, monospace;
+  /* Échelle compacte (~1 cran sous Tailwind par défaut) */
+  --text-xs: 0.6875rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.2rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.35rem;
+  --text-lg: 1rem;
+  --text-lg--line-height: 1.45rem;
+  --text-xl: 1.125rem;
+  --text-xl--line-height: 1.55rem;
+  --text-2xl: 1.3125rem;
+  --text-2xl--line-height: 1.65rem;
+  --text-3xl: 1.5rem;
+  --text-3xl--line-height: 1.85rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  background:
+    radial-gradient(ellipse 75% 45% at 50% -15%, color-mix(in srgb, var(--color-teal) 10%, transparent), transparent),
+    radial-gradient(ellipse 55% 35% at 100% 0%, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent),
+    radial-gradient(ellipse 40% 30% at 0% 100%, color-mix(in srgb, var(--color-cyan) 5%, transparent), transparent),
+    var(--color-bg);
+  color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.quant {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.glass {
+  background: color-mix(in srgb, var(--color-panel) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, var(--color-teal) 30%);
+  backdrop-filter: blur(12px);
+}
+
+.glow-success {
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--color-teal) 12%, transparent);
+}
+
+.glow-ev-hot {
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.brand-gradient-text {
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-teal) 45%, var(--color-cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-ring {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-teal) 30%, var(--color-border)),
+    0 4px 24px color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tile-lift {
+    transition:
+      transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.2s ease;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+  }
+
+  .tile-lift:hover {
+    transform: translate3d(0, -4px, 0);
+    border-color: color-mix(in srgb, var(--color-teal) 14%, var(--color-border));
+    box-shadow: 0 5px 16px color-mix(in srgb, var(--color-teal) 6%, transparent);
+  }
+
+  .tile-lift:active {
+    transform: translate3d(0, -2px, 0);
+    transition-duration: 0.08s;
+  }
+}
