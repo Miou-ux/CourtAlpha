@@ -36,11 +36,31 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1/
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8502/
 ```
 
-## Mise à jour
+## Mise à jour (PROD — git pull)
+
+Le serveur clone le repo dans `/opt/courtalpha` :
+
+```bash
+ssh bettinghud
+cd /opt/courtalpha
+git pull --ff-only
+sudo systemctl restart courtalpha-api
+```
+
+Si l’UI React a changé, rebuild **sur PC PREPROD** puis copie du `dist/` (non versionné) :
+
+```powershell
+cd O:\Miouppy\Documents\CourtAlpha\frontend
+npm run build
+scp -r dist bettinghud:/opt/courtalpha/frontend/
+```
+
+> `.env` et `frontend/dist/` ne sont **pas** dans git — ils restent sur le SD entre les pulls.
+
+## Mise à jour (fallback tarball)
 
 ```bash
 bash deploy/deploy_prod.sh bettinghud
-# rebuild frontend si changement UI
 sudo systemctl restart courtalpha-api
 ```
 
