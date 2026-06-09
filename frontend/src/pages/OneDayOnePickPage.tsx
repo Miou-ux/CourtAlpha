@@ -94,9 +94,13 @@ export function OneDayOnePickPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-accent">{t('oneDayOnePick.pickOfDay')}</p>
                 <Badge tone="accent">{todayDate ?? pickToday.calendar_date}</Badge>
                 {pickToday.source === 'live' && <Badge tone="default">{t('oneDayOnePick.liveSnapshot')}</Badge>}
-                {pickToday.open && <Badge tone="accent">{t('common.statusOpen')}</Badge>}
+                {pickToday.won && <Badge tone="success">{t('common.statusWon')}</Badge>}
+                {pickToday.lost && <Badge tone="danger">{t('common.statusLost')}</Badge>}
+                {pickToday.open && !pickToday.won && !pickToday.lost && (
+                  <Badge tone="accent">{t('common.statusOpen')}</Badge>
+                )}
               </div>
-              <PickCard pick={{ ...pickToday, rank: pickToday.day_rank }} index={0} featured />
+              <PickCard pick={{ ...pickToday, rank: pickToday.day_rank }} index={0} featured showResult />
             </section>
           )}
 

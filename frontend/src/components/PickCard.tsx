@@ -2,6 +2,7 @@ import { Target } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { PickRow } from '../api/client'
 import { cn } from '../lib/utils'
+import { translateBetStatus } from '../lib/betStatus'
 import { evTier } from '../lib/liveMetrics'
 import { evPctStyles } from '../lib/evDisplay'
 import { pickModelProbaPct } from '../lib/modelProba'
@@ -16,9 +17,11 @@ type PickCardProps = {
   index: number
   onBet?: (pick: PickRow) => void
   featured?: boolean
+  /** Affiche Gagné / Perdu / En cours (1 Day 1 Pick). */
+  showResult?: boolean
 }
 
-export function PickCard({ pick, index, onBet, featured }: PickCardProps) {
+export function PickCard({ pick, index, onBet, featured, showResult }: PickCardProps) {
   const { t } = useTranslation()
   const rank = pick.rank ?? index + 1
   const ev = pick.ev_fav_pct ?? pick.ev_pct ?? 0
@@ -28,6 +31,10 @@ export function PickCard({ pick, index, onBet, featured }: PickCardProps) {
   const evStyle = evPctStyles(ev)
   const isPremium = ev >= 15 && (proba ?? 0) >= 60
   const existingStake = pick.existing_stake_eur ?? 0
+  const resultPick = pick as PickRow & { won?: boolean; lost?: boolean; open?: boolean; status?: string | null }
+  const resultWon = resultPick.won || resultPick.status === 'Gagné'
+  const resultLost = resultPick.lost || resultPick.status === 'Perdu'
+  const resultOpen = resultPick.open || resultPick.status === 'En cours'
 
   return (
     <Card
@@ -52,6 +59,15 @@ export function PickCard({ pick, index, onBet, featured }: PickCardProps) {
           <p className="mt-1 text-sm text-muted">{pick.tournament}</p>
         </div>
         <div className="flex flex-wrap justify-end gap-1">
+          {showResult && resultWon && (
+            <Badge tone="success">{translateBetStatus('Gagné', t)}</Badge>
+          )}
+          {showResult && resultLost && (
+            <Badge tone="danger">{translateBetStatus('Perdu', t)}</Badge>
+          )}
+          {showResult && resultOpen && !resultWon && !resultLost && (
+            <Badge tone="accent">{translateBetStatus('En cours', t)}</Badge>
+          )}
           {tour.includes('ATP') && <Badge tone="atp">ATP</Badge>}
           {tour.includes('WTA') && <Badge tone="wta">WTA</Badge>}
           {isPremium && <Badge tone="success">{t('common.value')}</Badge>}
