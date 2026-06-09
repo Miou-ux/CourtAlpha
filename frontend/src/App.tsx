@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { setAppLang } from './i18n'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Header } from './components/layout/Header'
 import { MobileBottomNav } from './components/layout/MobileBottomNav'
@@ -23,6 +24,7 @@ import { TrackingPage } from './pages/TrackingPage'
 import { PricingPage } from './pages/PricingPage'
 import { MethodoPage } from './pages/MethodoPage'
 import { OneDayOnePickArchivePage } from './pages/OneDayOnePickArchivePage'
+import { TrackRecordFaqPage } from './pages/TrackRecordFaqPage'
 import { PRICING_ENABLED } from './lib/features'
 
 function ResetTokenRedirect() {
@@ -110,6 +112,55 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
         }
       />
       <Route
+        path="/track-record-faq"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <TrackRecordFaqPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/en/1-day-1-pick"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <OneDayOnePickPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/en/methodo"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <MethodoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/en/track-record-faq"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <TrackRecordFaqPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/en/1-day-1-pick/archive"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <OneDayOnePickArchivePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/en/1-day-1-pick/archive/:yearMonth"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <OneDayOnePickArchivePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/en" element={<Navigate to="/en/1-day-1-pick" replace />} />
+      <Route
         path="/methodo"
         element={
           <ProtectedRoute requireAuth={false}>
@@ -196,6 +247,12 @@ function App() {
 
   useEffect(() => {
     setMobileNavOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/en/') || location.pathname === '/en') {
+      setAppLang('en')
+    }
   }, [location.pathname])
 
   useEffect(() => {

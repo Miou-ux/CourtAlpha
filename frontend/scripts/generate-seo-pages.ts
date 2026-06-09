@@ -8,9 +8,12 @@ import { fileURLToPath } from 'node:url'
 import {
   allSitemapPaths,
   canonicalUrl,
+  hasHreflangPair,
+  hreflangAlternates,
   jsonLdForPath,
   noscriptHtmlForPath,
   OG_IMAGE,
+  parseSeoPath,
   seoForPath,
   SITE_NAME,
 } from '../src/lib/seoData.ts'
@@ -19,10 +22,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distDir = path.resolve(__dirname, '../dist')
 
 function injectHead(html: string, pathname: string): string {
+  const { lang, logicalPath } = parseSeoPath(pathname)
   const seo = seoForPath(pathname)
   const url = canonicalUrl(pathname)
   const jsonLd = jsonLdForPath(pathname)
   const noscript = noscriptHtmlForPath(pathname)
+  const ogLocale = lang === 'en' ? 'en_GB' : 'fr_FR'
 
   let out = html
   out = out.replace(/<title>[^<]*<\/title>/, `<title>${seo.title}</title>`)
@@ -33,16 +38,24 @@ function injectHead(html: string, pathname: string): string {
 
   const ogImage = seo.ogImage ?? OG_IMAGE
 
+  const hreflangBlock =
+    hasHreflangPair(logicalPath) ?
+      hreflangAlternates(logicalPath)
+        .map((h) => `<link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
+        .join('\n    ')
+    : ''
+
   const headInject = `
     <meta name="robots" content="${seo.robots}" />
     <link rel="canonical" href="${url}" />
+    ${hreflangBlock}
     <meta property="og:title" content="${seo.title}" />
     <meta property="og:description" content="${seo.description}" />
     <meta property="og:url" content="${url}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="${SITE_NAME}" />
     <meta property="og:image" content="${ogImage}" />
-    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:locale" content="${ogLocale}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${seo.title}" />
     <meta name="twitter:description" content="${seo.description}" />

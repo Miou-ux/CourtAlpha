@@ -180,6 +180,12 @@
     "colResult": "Résultat",
     "colScore": "Score"
   },
+  "trackRecordFaq": {
+    "kicker": "Transparence",
+    "title": "FAQ track record",
+    "subtitle": "Comment lire et auditer le pick quotidien 1 Day 1 Pick — historique public, bankroll simulée, mises à jour des résultats.",
+    "backToPick": "Voir le track record live"
+  },
   "pricing": {
     "kicker": "Accès",
     "title": "Gratuit vs Premium",

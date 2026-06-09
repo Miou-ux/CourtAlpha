@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import {
   allSitemapPaths,
   COURTALPHA_ABOUT,
-  PAGE_SEO,
+  seoForPath,
   SITE_URL,
 } from '../src/lib/seoData.ts'
 
@@ -14,8 +14,8 @@ const distDir = path.resolve(__dirname, '../dist')
 
 const publicPages = allSitemapPaths()
   .map((p) => {
-    const seo = PAGE_SEO[p]
-    return seo ? `- [${p}](${SITE_URL}${p}) — ${seo.description}` : `- ${SITE_URL}${p}`
+    const seo = seoForPath(p)
+    return `- [${p}](${SITE_URL}${p}) — ${seo.description}`
   })
   .join('\n')
 

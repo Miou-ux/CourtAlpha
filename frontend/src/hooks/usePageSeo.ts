@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
-import { canonicalUrl, jsonLdForPath, OG_IMAGE, SITE_NAME, seoForPath } from '../lib/seo'
+import { canonicalUrl, hasHreflangPair, hreflangAlternates, jsonLdForPath, OG_IMAGE, parseSeoPath, seoForPath } from '../lib/seo'
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
   const selector = `meta[${attr}="${key}"]`
@@ -40,11 +40,24 @@ function upsertJsonLd(blocks: object[]) {
   el.textContent = JSON.stringify(blocks.length === 1 ? blocks[0] : blocks)
 }
 
+function upsertHreflang(logicalPath: string) {
+  document.head.querySelectorAll('link[rel="alternate"][hreflang]').forEach((el) => el.remove())
+  if (!hasHreflangPair(logicalPath)) return
+  for (const h of hreflangAlternates(logicalPath)) {
+    const el = document.createElement('link')
+    el.rel = 'alternate'
+    el.hreflang = h.hreflang
+    el.href = h.href
+    document.head.appendChild(el)
+  }
+}
+
 /** Met à jour title, canonical, meta, OG, Twitter et JSON-LD à chaque route. */
 export function usePageSeo() {
   const { pathname } = useLocation()
   const { i18n } = useTranslation()
-  const lang = i18n.language
+  const { logicalPath } = parseSeoPath(pathname)
+  const lang = pathname.startsWith('/en/') || pathname === '/en' ? 'en' : i18n.language
 
   useEffect(() => {
     const seo = seoForPath(pathname, lang)
@@ -56,12 +69,13 @@ export function usePageSeo() {
     upsertMeta('name', 'description', seo.description)
     upsertMeta('name', 'robots', seo.robots)
     upsertLink('canonical', url)
+    upsertHreflang(logicalPath)
 
     upsertMeta('property', 'og:title', seo.title)
     upsertMeta('property', 'og:description', seo.description)
     upsertMeta('property', 'og:url', url)
     upsertMeta('property', 'og:type', 'website')
-    upsertMeta('property', 'og:site_name', SITE_NAME)
+    upsertMeta('property', 'og:site_name', 'CourtAlpha')
     upsertMeta('property', 'og:image', ogImage)
     upsertMeta('property', 'og:locale', ogLocale)
 
@@ -71,5 +85,5 @@ export function usePageSeo() {
     upsertMeta('name', 'twitter:image', ogImage)
 
     upsertJsonLd(jsonLdForPath(pathname, lang))
-  }, [pathname, lang])
+  }, [pathname, lang, logicalPath])
 }

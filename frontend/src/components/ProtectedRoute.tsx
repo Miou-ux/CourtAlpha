@@ -49,7 +49,12 @@ export function ProtectedRoute({
 /** Routes accessibles sans compte. */
 export const PUBLIC_APP_PATHS = new Set([
   '/1-day-1-pick',
+  '/track-record-faq',
   '/login',
+  '/en/1-day-1-pick',
+  '/en/methodo',
+  '/en/track-record-faq',
+  '/en/1-day-1-pick/archive',
   ...(PRICING_ENABLED ? (['/pricing'] as const) : []),
 ])
 

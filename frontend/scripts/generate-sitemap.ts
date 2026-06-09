@@ -9,14 +9,16 @@ const distDir = path.resolve(__dirname, '../dist')
 const today = new Date().toISOString().slice(0, 10)
 
 function priority(pathname: string): string {
-  if (pathname === '/1-day-1-pick') return '1.0'
-  if (pathname === '/pricing' || pathname === '/methodo') return '0.8'
-  if (pathname === '/1-day-1-pick/archive') return '0.7'
+  if (pathname === '/1-day-1-pick' || pathname === '/en/1-day-1-pick') return '1.0'
+  if (pathname === '/track-record-faq' || pathname === '/en/track-record-faq') return '0.85'
+  if (pathname === '/pricing' || pathname === '/methodo' || pathname === '/en/methodo') return '0.8'
+  if (pathname === '/1-day-1-pick/archive' || pathname === '/en/1-day-1-pick/archive') return '0.7'
   return '0.6'
 }
 
 function changefreq(pathname: string): string {
   if (pathname === '/1-day-1-pick' || pathname.startsWith('/1-day-1-pick/archive/')) return 'daily'
+  if (pathname === '/en/1-day-1-pick' || pathname.startsWith('/en/1-day-1-pick/archive/')) return 'daily'
   if (pathname === '/pricing') return 'weekly'
   return 'monthly'
 }

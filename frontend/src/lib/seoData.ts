@@ -98,6 +98,7 @@ export const ONE_DAY_ONE_PICK_EDITORIAL = {
   links: [
     { href: '/methodo', label: 'Stratégie & backtests' },
     { href: '/1-day-1-pick/archive', label: 'Archives mensuelles' },
+    { href: '/track-record-faq', label: 'FAQ track record' },
     { href: '/pricing', label: 'Tarifs Gratuit vs Premium' },
   ],
 } as const
@@ -112,6 +113,7 @@ export const ONE_DAY_ONE_PICK_EDITORIAL_EN = {
   links: [
     { href: '/methodo', label: 'Strategy & backtests' },
     { href: '/1-day-1-pick/archive', label: 'Monthly archives' },
+    { href: '/track-record-faq', label: 'Track record FAQ' },
     { href: '/pricing', label: 'Free vs Premium pricing' },
   ],
 } as const
@@ -170,6 +172,106 @@ export function getPricingFaq(lang?: string) {
   return normalizeSeoLang(lang) === 'en' ? PRICING_FAQ_EN : PRICING_FAQ
 }
 
+export const TRACK_RECORD_FAQ = [
+  {
+    q: 'Est-ce que les picks perdants sont supprimés ?',
+    a: 'Non. Chaque pick reste visible avec cote, proba, score et statut Gagné/Perdu. L’historique complet alimente la courbe bankroll et le hit rate.',
+  },
+  {
+    q: 'Comment est choisi le pick du jour ?',
+    a: 'Un seul match/jour sur tournois majeurs 250+ : favori modèle le plus confiant (rank=1), bande EV +15 % à +100 %, fuseau Europe/Paris.',
+  },
+  {
+    q: 'La bankroll 100 € est-elle réelle ?',
+    a: 'C’est une simulation transparente avec mises théoriques du modèle. Elle sert à comparer la performance dans le temps, pas un compte bookmaker.',
+  },
+  {
+    q: 'Quand le résultat est-il mis à jour ?',
+    a: 'Automatiquement après la fin du match (sources Tennis Explorer / cache résultats), typiquement sous 10–30 minutes en production.',
+  },
+  {
+    q: 'Puis-je vérifier sans compte ?',
+    a: 'Oui. 1 Day 1 Pick, les archives mensuelles et cette FAQ sont publics. Un compte gratuit sert au portefeuille perso, pas à voir le track record.',
+  },
+  {
+    q: 'CourtAlpha garantit-il des gains ?',
+    a: 'Non. Outil statistique et journal auditable — pas un conseil financier. Paris sportifs : risque de perte, 18+, jouez responsablement.',
+  },
+] as const
+
+export const TRACK_RECORD_FAQ_EN = [
+  {
+    q: 'Are losing picks removed from history?',
+    a: 'No. Every pick stays visible with odds, model probability, score, and Won/Lost status. The full history drives the bankroll curve and hit rate.',
+  },
+  {
+    q: 'How is the daily pick selected?',
+    a: 'One match per calendar day on major 250+ tournaments: highest-confidence model favorite (rank=1), EV band +15% to +100%, Europe/Paris timezone.',
+  },
+  {
+    q: 'Is the 100 € bankroll real money?',
+    a: 'It is a transparent simulation with theoretical model stakes. It tracks performance over time — not a bookmaker account.',
+  },
+  {
+    q: 'When is the result updated?',
+    a: 'Automatically after the match ends (Tennis Explorer / results cache), typically within 10–30 minutes in production.',
+  },
+  {
+    q: 'Can I verify without an account?',
+    a: 'Yes. 1 Day 1 Pick, monthly archives, and this FAQ are public. A free account is for your personal portfolio, not to view the track record.',
+  },
+  {
+    q: 'Does CourtAlpha guarantee profits?',
+    a: 'No. Statistical tool and auditable journal — not financial advice. Sports betting involves risk of loss, 18+, gamble responsibly.',
+  },
+] as const
+
+export function getTrackRecordFaq(lang?: string) {
+  return normalizeSeoLang(lang) === 'en' ? TRACK_RECORD_FAQ_EN : TRACK_RECORD_FAQ
+}
+
+/** Préfixe URL pour pages SEO anglaises (prerender + sitemap). */
+export const SEO_EN_PREFIX = '/en'
+
+const EN_INDEXABLE_LOGICAL = [
+  '/1-day-1-pick',
+  '/methodo',
+  '/track-record-faq',
+  '/1-day-1-pick/archive',
+] as const
+
+export function parseSeoPath(pathname: string): { lang: SeoLang; logicalPath: string } {
+  if (pathname === SEO_EN_PREFIX || pathname.startsWith(`${SEO_EN_PREFIX}/`)) {
+    const logical = pathname === SEO_EN_PREFIX ? '/' : pathname.slice(SEO_EN_PREFIX.length) || '/'
+    return { lang: 'en', logicalPath: logical }
+  }
+  return { lang: 'fr', logicalPath: pathname }
+}
+
+export function publicPathFor(logicalPath: string, lang: SeoLang): string {
+  if (lang === 'en') {
+    return logicalPath === '/' ? SEO_EN_PREFIX : `${SEO_EN_PREFIX}${logicalPath}`
+  }
+  return logicalPath
+}
+
+export function hreflangAlternates(logicalPath: string): { hreflang: string; href: string }[] {
+  const fr = canonicalUrl(logicalPath)
+  const en = canonicalUrl(publicPathFor(logicalPath, 'en'))
+  return [
+    { hreflang: 'fr', href: fr },
+    { hreflang: 'en', href: en },
+    { hreflang: 'x-default', href: fr },
+  ]
+}
+
+export function hasHreflangPair(logicalPath: string): boolean {
+  if (logicalPath.startsWith('/1-day-1-pick/archive/') && logicalPath !== '/1-day-1-pick/archive') {
+    return true
+  }
+  return (EN_INDEXABLE_LOGICAL as readonly string[]).includes(logicalPath)
+}
+
 export const METHODOLOGY_SECTIONS = [
   {
     id: 'modele',
@@ -196,6 +298,7 @@ export const METHODOLOGY_SECTIONS = [
 /** Routes indexables (sitemap + prerender). */
 export const SITEMAP_STATIC_PATHS = [
   '/1-day-1-pick',
+  '/track-record-faq',
   '/pricing',
   '/methodo',
   '/1-day-1-pick/archive',
@@ -213,8 +316,13 @@ export function archiveMonthPaths(count = 6): string[] {
   return out
 }
 
+export function enSitemapPaths(): string[] {
+  return [...EN_INDEXABLE_LOGICAL, ...archiveMonthPaths()].map((p) => publicPathFor(p, 'en'))
+}
+
 export function allSitemapPaths(): string[] {
-  return [...SITEMAP_STATIC_PATHS, ...archiveMonthPaths()]
+  const fr = [...SITEMAP_STATIC_PATHS, ...archiveMonthPaths()]
+  return [...fr, ...enSitemapPaths()]
 }
 
 export const PAGE_SEO: Record<string, PageSeo> = {
@@ -247,6 +355,13 @@ export const PAGE_SEO: Record<string, PageSeo> = {
     description:
       'Index des archives mensuelles du pick quotidien CourtAlpha : performance et historique par mois.',
     robots: 'index,follow',
+  },
+  '/track-record-faq': {
+    title: 'FAQ track record — 1 Day 1 Pick | CourtAlpha',
+    description:
+      'Transparence du pick tennis quotidien : historique non effacé, bankroll simulée, mise à jour des résultats, sans garantie de gain.',
+    robots: 'index,follow',
+    ogImage: OG_IMAGE_PICK,
   },
   '/live': {
     title: 'Live Tracker — CourtAlpha',
@@ -349,6 +464,13 @@ export const PAGE_SEO_EN: Record<string, PageSeo> = {
     title: '1 Day 1 Pick archives — CourtAlpha',
     description: 'Index of monthly archives for the CourtAlpha daily pick: performance and history by month.',
     robots: 'index,follow',
+  },
+  '/track-record-faq': {
+    title: 'Track record FAQ — 1 Day 1 Pick | CourtAlpha',
+    description:
+      'Transparency FAQ for the daily tennis pick: no deleted losses, simulated bankroll, result updates, no profit guarantee.',
+    robots: 'index,follow',
+    ogImage: OG_IMAGE_PICK,
   },
   '/live': {
     title: 'Live Tracker — CourtAlpha',
@@ -460,14 +582,15 @@ export function archiveSeo(yearMonth: string, lang?: string): PageSeo {
 }
 
 export function seoForPath(pathname: string, lang?: string): PageSeo {
-  const seoLang = normalizeSeoLang(lang)
+  const { lang: pathLang, logicalPath } = parseSeoPath(pathname)
+  const seoLang = lang ? normalizeSeoLang(lang) : pathLang
   const table = seoLang === 'en' ? PAGE_SEO_EN : PAGE_SEO
   const fallback = seoLang === 'en' ? FALLBACK_SEO_EN : FALLBACK_SEO
-  if (pathname.startsWith('/1-day-1-pick/archive/') && pathname !== '/1-day-1-pick/archive') {
-    const ym = pathname.split('/').pop() || ''
+  if (logicalPath.startsWith('/1-day-1-pick/archive/') && logicalPath !== '/1-day-1-pick/archive') {
+    const ym = logicalPath.split('/').pop() || ''
     if (/^\d{4}-\d{2}$/.test(ym)) return { ...archiveSeo(ym, seoLang), ogImage: OG_IMAGE_PICK }
   }
-  return table[pathname] ?? fallback
+  return table[logicalPath] ?? fallback
 }
 
 export function canonicalUrl(pathname: string): string {
@@ -476,7 +599,8 @@ export function canonicalUrl(pathname: string): string {
 }
 
 export function jsonLdForPath(pathname: string, lang?: string): object[] {
-  const seoLang = normalizeSeoLang(lang)
+  const { lang: pathLang, logicalPath } = parseSeoPath(pathname)
+  const seoLang = lang ? normalizeSeoLang(lang) : pathLang
   const seo = seoForPath(pathname, seoLang)
   const about = getCourtAlphaAbout(seoLang)
   const description = seoLang === 'en' ? DEFAULT_DESCRIPTION_EN : DEFAULT_DESCRIPTION
@@ -523,7 +647,7 @@ export function jsonLdForPath(pathname: string, lang?: string): object[] {
     isPartOf: { '@type': 'WebSite', url: SITE_URL },
   }
 
-  if (pathname === '/pricing') {
+  if (logicalPath === '/pricing') {
     const faq = getPricingFaq(seoLang)
     return [
       ...base,
@@ -540,7 +664,25 @@ export function jsonLdForPath(pathname: string, lang?: string): object[] {
     ]
   }
 
-  if (pathname === '/methodo') {
+  if (logicalPath === '/track-record-faq') {
+    const faq = getTrackRecordFaq(seoLang)
+    return [
+      ...base,
+      page,
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faq.map((item) => ({
+          '@type': 'Question',
+          name: item.q,
+          acceptedAnswer: { '@type': 'Answer', text: item.a },
+        })),
+      },
+    ]
+  }
+
+  if (logicalPath === '/methodo') {
+    const aboutBlock = getCourtAlphaAbout(seoLang)
     return [
       ...base,
       {
@@ -548,6 +690,7 @@ export function jsonLdForPath(pathname: string, lang?: string): object[] {
         '@type': 'Article',
         headline: seo.title,
         articleSection: 'Methodo',
+        description: aboutBlock.summary,
       },
     ]
   }
@@ -556,37 +699,55 @@ export function jsonLdForPath(pathname: string, lang?: string): object[] {
 }
 
 export function noscriptHtmlForPath(pathname: string): string {
+  const { lang, logicalPath } = parseSeoPath(pathname)
   const seo = seoForPath(pathname)
   if (seo.robots !== 'index,follow') return ''
 
-  if (pathname === '/1-day-1-pick') {
+  const editorial = getOneDayOnePickEditorial(lang)
+  const about = getCourtAlphaAbout(lang)
+  const methodoHref = publicPathFor('/methodo', lang)
+  const faqHref = publicPathFor('/track-record-faq', lang)
+  const pickHref = publicPathFor('/1-day-1-pick', lang)
+
+  if (logicalPath === '/1-day-1-pick') {
     return `<article>
-<h1>1 Day 1 Pick — pronostic tennis quotidien</h1>
+<h1>${seoLangTitle(lang)}</h1>
 <p>${seo.description}</p>
-<h2>${ONE_DAY_ONE_PICK_EDITORIAL.title}</h2>
-${ONE_DAY_ONE_PICK_EDITORIAL.paragraphs.map((p) => `<p>${p}</p>`).join('\n')}
-<p><a href="${SITE_URL}/methodo">Methodo</a> · <a href="${SITE_URL}/pricing">Tarifs</a></p>
+<h2>${editorial.title}</h2>
+${editorial.paragraphs.map((p) => `<p>${p}</p>`).join('\n')}
+<p><a href="${SITE_URL}${methodoHref}">Methodo</a> · <a href="${SITE_URL}${faqHref}">FAQ</a></p>
 </article>`
   }
 
-  if (pathname === '/pricing') {
-    const faq = PRICING_FAQ.map((f) => `<h3>${f.q}</h3><p>${f.a}</p>`).join('\n')
-    return `<article><h1>Tarifs CourtAlpha</h1><p>${seo.description}</p>${faq}</article>`
+  if (logicalPath === '/pricing') {
+    const faq = getPricingFaq(lang).map((f) => `<h3>${f.q}</h3><p>${f.a}</p>`).join('\n')
+    const h1 = lang === 'en' ? 'CourtAlpha pricing' : 'Tarifs CourtAlpha'
+    return `<article><h1>${h1}</h1><p>${seo.description}</p>${faq}</article>`
   }
 
-  if (pathname === '/methodo') {
-    return `<article><h1>Methodo — CourtAlpha</h1><p>${seo.description}</p><p>${COURTALPHA_ABOUT.summary}</p></article>`
+  if (logicalPath === '/methodo') {
+    return `<article><h1>${seo.title}</h1><p>${seo.description}</p><p>${about.summary}</p></article>`
   }
 
-  if (pathname === '/1-day-1-pick/archive') {
-    return `<article><h1>Archives 1 Day 1 Pick</h1><p>${seo.description}</p></article>`
+  if (logicalPath === '/track-record-faq') {
+    const faq = getTrackRecordFaq(lang).map((f) => `<h3>${f.q}</h3><p>${f.a}</p>`).join('\n')
+    return `<article><h1>${seo.title}</h1><p>${seo.description}</p>${faq}<p><a href="${SITE_URL}${pickHref}">1 Day 1 Pick</a></p></article>`
   }
 
-  if (pathname.startsWith('/1-day-1-pick/archive/')) {
-    const ym = pathname.split('/').pop() || ''
-    const a = archiveSeo(ym)
+  if (logicalPath === '/1-day-1-pick/archive') {
+    const h1 = lang === 'en' ? '1 Day 1 Pick archives' : 'Archives 1 Day 1 Pick'
+    return `<article><h1>${h1}</h1><p>${seo.description}</p></article>`
+  }
+
+  if (logicalPath.startsWith('/1-day-1-pick/archive/')) {
+    const ym = logicalPath.split('/').pop() || ''
+    const a = archiveSeo(ym, lang)
     return `<article><h1>${a.title}</h1><p>${a.description}</p></article>`
   }
 
   return `<article><h1>${seo.title}</h1><p>${seo.description}</p></article>`
+}
+
+function seoLangTitle(lang: SeoLang): string {
+  return lang === 'en' ? '1 Day 1 Pick — daily tennis pick' : '1 Day 1 Pick — pronostic tennis quotidien'
 }
