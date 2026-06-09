@@ -6,6 +6,7 @@ import { PageHero } from '../components/PageHero'
 import { Card } from '../components/ui/card'
 import { StatTile } from '../components/ui/stat-tile'
 import { getCourtAlphaAbout } from '../lib/seo'
+import { PRICING_ENABLED } from '../lib/features'
 import * as methodoFr from '../lib/methodoContent'
 import * as methodoEn from '../lib/methodoContentEn'
 
@@ -158,12 +159,14 @@ export function MethodoPage() {
         >
           {t('methodo.seeTrackRecord')}
         </Link>
-        <Link
-          to="/pricing"
-          className="rounded-lg border border-border px-4 py-2 text-white hover:border-accent/40"
-        >
-          {t('methodo.premiumTools')}
-        </Link>
+        {PRICING_ENABLED && (
+          <Link
+            to="/pricing"
+            className="rounded-lg border border-border px-4 py-2 text-white hover:border-accent/40"
+          >
+            {t('methodo.premiumTools')}
+          </Link>
+        )}
         <Link
           to="/1-day-1-pick/archive"
           className="rounded-lg border border-border px-4 py-2 text-muted hover:border-accent/40 hover:text-white"

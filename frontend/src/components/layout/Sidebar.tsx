@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { PRICING_ENABLED } from '../../lib/features'
 import { TELEGRAM_CHANNEL_URL } from '../../lib/seo'
 import { cn } from '../../lib/utils'
 import { isAdmin, isPremium } from '../../lib/auth'
@@ -174,7 +175,9 @@ export function Sidebar({ counts, mobileOpen = false, onNavigate }: SidebarProps
             onNavigate={onNavigate}
           />
         ))}
-        <NavItem to="/pricing" label={t('nav.pricing')} icon={Sparkles} onNavigate={onNavigate} />
+        {PRICING_ENABLED && (
+          <NavItem to="/pricing" label={t('nav.pricing')} icon={Sparkles} onNavigate={onNavigate} />
+        )}
         {showAdmin && (
           <>
             <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">{t('nav.admin')}</p>

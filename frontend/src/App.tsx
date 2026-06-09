@@ -23,6 +23,7 @@ import { TrackingPage } from './pages/TrackingPage'
 import { PricingPage } from './pages/PricingPage'
 import { MethodoPage } from './pages/MethodoPage'
 import { OneDayOnePickArchivePage } from './pages/OneDayOnePickArchivePage'
+import { PRICING_ENABLED } from './lib/features'
 
 function ResetTokenRedirect() {
   const location = useLocation()
@@ -41,9 +42,13 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
       <Route
         path="/pricing"
         element={
-          <ProtectedRoute requireAuth={false}>
-            <PricingPage />
-          </ProtectedRoute>
+          PRICING_ENABLED ? (
+            <ProtectedRoute requireAuth={false}>
+              <PricingPage />
+            </ProtectedRoute>
+          ) : (
+            <Navigate to="/1-day-1-pick" replace />
+          )
         }
       />
       <Route

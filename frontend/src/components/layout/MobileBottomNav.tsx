@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { Menu, Sparkles, Target, Wallet } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { PRICING_ENABLED } from '../../lib/features'
 import { cn } from '../../lib/utils'
 
 import { useAuth } from '../../context/AuthContext'
@@ -22,7 +23,18 @@ export function MobileBottomNav({ onMenuClick }: MobileBottomNavProps) {
       className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-panel/95 backdrop-blur-md md:hidden"
       aria-label={t('nav.mainNav')}
     >
-      <div className={cn('mx-auto grid max-w-lg', user ? 'grid-cols-4' : 'grid-cols-3')}>
+      <div
+        className={cn(
+          'mx-auto grid max-w-lg',
+          user
+            ? PRICING_ENABLED
+              ? 'grid-cols-4'
+              : 'grid-cols-3'
+            : PRICING_ENABLED
+              ? 'grid-cols-3'
+              : 'grid-cols-2',
+        )}
+      >
         {publicTabs.map(({ to, labelKey, icon: Icon }) => (
           <NavLink
             key={to}
@@ -52,18 +64,20 @@ export function MobileBottomNav({ onMenuClick }: MobileBottomNavProps) {
             {t('nav.portfolio')}
           </NavLink>
         )}
-        <NavLink
-          to="/pricing"
-          className={({ isActive }) =>
-            cn(
-              'flex flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium transition',
-              isActive ? 'text-accent' : 'text-muted',
-            )
-          }
-        >
-          <Sparkles className="h-5 w-5" />
-          {t('nav.premium')}
-        </NavLink>
+        {PRICING_ENABLED && (
+          <NavLink
+            to="/pricing"
+            className={({ isActive }) =>
+              cn(
+                'flex flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium transition',
+                isActive ? 'text-accent' : 'text-muted',
+              )
+            }
+          >
+            <Sparkles className="h-5 w-5" />
+            {t('nav.premium')}
+          </NavLink>
+        )}
         <button
           type="button"
           onClick={onMenuClick}
