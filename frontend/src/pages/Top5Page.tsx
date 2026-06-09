@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { PickRow } from '../api/client'
 import { BetModal } from '../components/BetModal'
 import { EmptyState } from '../components/EmptyState'
@@ -18,6 +19,7 @@ type Top5PageProps = {
 }
 
 export function Top5Page({ picks, pool, loading, onBetSuccess }: Top5PageProps) {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [selected, setSelected] = useState<PickRow | null>(null)
@@ -33,18 +35,18 @@ export function Top5Page({ picks, pool, loading, onBetSuccess }: Top5PageProps) 
   return (
     <div>
       <PageHero
-        kicker="Best pick"
-        title="Top 5 proba"
-        subtitle="Bande EV 15–100 % · tri proba modèle décroissante."
+        kicker={t('top5.kicker')}
+        title={t('top5.title')}
+        subtitle={t('top5.subtitle')}
         stats={[
-          { label: 'Top 5', value: String(picks.length) },
-          { label: 'Pool', value: String(pool) },
+          { label: t('top5.top5'), value: String(picks.length) },
+          { label: t('paris.pool'), value: String(pool) },
         ]}
       />
       {loading ? (
         <CardGridSkeleton count={2} />
       ) : picks.length === 0 ? (
-        <EmptyState title="Aucun pick dans la bande EV 15–100 %" hint="Les meilleurs picks du jour peuvent avoir une EV > 100 % (hors bande Top 5)." />
+        <EmptyState title={t('top5.emptyTitle')} hint={t('top5.emptyHint')} />
       ) : (
         <div className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">

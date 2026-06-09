@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { PickRow } from '../api/client'
 import { BetModal } from '../components/BetModal'
 import { EmptyState } from '../components/EmptyState'
@@ -16,6 +17,7 @@ type ParisPageProps = {
 }
 
 export function ParisPage({ picks, scanned, loading, onBetSuccess }: ParisPageProps) {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [selected, setSelected] = useState<PickRow | null>(null)
@@ -31,18 +33,18 @@ export function ParisPage({ picks, scanned, loading, onBetSuccess }: ParisPagePr
   return (
     <div>
       <PageHero
-        kicker="Mission du jour"
-        title="Paris du jour"
-        subtitle="Value bets avec proba modèle > 60 % et EV > 15 % — même logique que Telegram /picks."
+        kicker={t('paris.kicker')}
+        title={t('paris.title')}
+        subtitle={t('paris.subtitle')}
         stats={[
-          { label: 'Picks', value: String(picks.length), highlight: picks.length > 0 },
-          { label: 'Pool', value: String(scanned) },
+          { label: t('paris.picks'), value: String(picks.length), highlight: picks.length > 0 },
+          { label: t('paris.pool'), value: String(scanned) },
         ]}
       />
       {loading ? (
         <CardGridSkeleton count={2} />
       ) : picks.length === 0 ? (
-        <EmptyState title="Aucun pick aujourd'hui" hint="Les filtres sont stricts. Consulte le Live Tracker ou attends le prochain snapshot." />
+        <EmptyState title={t('paris.emptyTitle')} hint={t('paris.emptyHint')} />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {picks.map((p, i) => (

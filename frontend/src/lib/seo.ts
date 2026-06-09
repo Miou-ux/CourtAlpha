@@ -15,8 +15,13 @@ export {
   archiveMonthPaths,
   allSitemapPaths,
   PAGE_SEO,
+  PAGE_SEO_EN,
   ONE_DAY_ONE_PICK_EDITORIAL,
   PRICING_FAQ,
+  getCourtAlphaAbout,
+  getOneDayOnePickEditorial,
+  getPricingFaq,
+  normalizeSeoLang,
   METHODOLOGY_SECTIONS,
   archiveSeo,
   seoForPath,
@@ -25,4 +30,4 @@ export {
   noscriptHtmlForPath,
 } from './seoData'
 
-export type { RobotsDirective, PageSeo } from './seoData'
+export type { RobotsDirective, PageSeo, SeoLang } from './seoData'

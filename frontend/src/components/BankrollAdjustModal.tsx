@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
@@ -21,6 +22,7 @@ export function BankrollAdjustModal({
   onClose,
   onSuccess,
 }: BankrollAdjustModalProps) {
+  const { t } = useTranslation()
   const { token } = useAuth()
   const [amount, setAmount] = useState('10')
   const [loading, setLoading] = useState(false)
@@ -37,19 +39,16 @@ export function BankrollAdjustModal({
   const parsed = parseFloat(amount)
   const isWithdraw = mode === 'withdraw'
   const signedAmount = isWithdraw ? -Math.abs(parsed) : Math.abs(parsed)
-  const preview =
-    Number.isFinite(parsed) && parsed > 0
-      ? Math.max(0, availableEur + signedAmount)
-      : null
+  const preview = Number.isFinite(parsed) && parsed > 0 ? Math.max(0, availableEur + signedAmount) : null
 
   async function submit() {
     if (!token) return
     if (!Number.isFinite(parsed) || parsed <= 0) {
-      setError('Saisissez un montant strictement positif.')
+      setError(t('bankrollModal.invalidAmount'))
       return
     }
     if (isWithdraw && parsed > availableEur + 1e-6) {
-      setError(`Retrait max : ${availableEur.toFixed(2)} €.`)
+      setError(t('bankrollModal.maxWithdraw', { amount: availableEur.toFixed(2) }))
       return
     }
 
@@ -72,10 +71,11 @@ export function BankrollAdjustModal({
         <div className="mb-4 flex items-start justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-accent">
-              {isWithdraw ? 'Retirer des fonds' : 'Ajouter des fonds'}
+              {isWithdraw ? t('bankrollModal.withdrawTitle') : t('bankrollModal.addTitle')}
             </p>
             <p className="mt-1 text-sm text-muted">
-              BR disponible actuelle : <span className="quant text-white">{availableEur.toFixed(2)} €</span>
+              {t('bankrollModal.currentBr')} :{' '}
+              <span className="quant text-white">{availableEur.toFixed(2)} €</span>
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={onClose} className="!p-1.5">
@@ -84,7 +84,7 @@ export function BankrollAdjustModal({
         </div>
 
         <label className="block">
-          <FieldLabel>Montant (€)</FieldLabel>
+          <FieldLabel>{t('bankrollModal.amount')}</FieldLabel>
           <Input
             type="number"
             quant
@@ -98,7 +98,7 @@ export function BankrollAdjustModal({
 
         {preview != null && (
           <p className="mt-2 text-xs text-muted">
-            Nouvelle BR dispo estimée :{' '}
+            {t('bankrollModal.estimatedBr')} :{' '}
             <span className="quant font-medium text-white">{preview.toFixed(2)} €</span>
           </p>
         )}
@@ -107,10 +107,10 @@ export function BankrollAdjustModal({
 
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button variant={isWithdraw ? 'outline' : 'success'} disabled={loading} onClick={() => void submit()}>
-            {loading ? 'Enregistrement…' : isWithdraw ? 'Retirer' : 'Ajouter'}
+            {loading ? t('bankrollModal.saving') : isWithdraw ? t('bankrollModal.withdraw') : t('bankrollModal.add')}
           </Button>
         </div>
       </Card>

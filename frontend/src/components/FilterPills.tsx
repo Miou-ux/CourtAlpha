@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
 import { FieldLabel, Input } from './ui/input'
 
@@ -18,13 +19,15 @@ type FilterPillsProps = {
   onRanges?: (patch: Partial<LiveRangeFilters>) => void
 }
 
-const circuits: { id: CircuitFilter; label: string }[] = [
-  { id: 'all', label: 'Tous' },
-  { id: 'atp', label: 'ATP' },
-  { id: 'wta', label: 'WTA' },
+const circuits: { id: CircuitFilter; labelKey: string }[] = [
+  { id: 'all', labelKey: 'filters.all' },
+  { id: 'atp', labelKey: 'ATP' },
+  { id: 'wta', labelKey: 'WTA' },
 ]
 
 export function FilterPills({ circuit, search, onCircuit, onSearch, ranges, onRanges }: FilterPillsProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex flex-1 flex-col gap-3 rounded-xl border border-border bg-bg-elevated p-3">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -41,21 +44,21 @@ export function FilterPills({ circuit, search, onCircuit, onSearch, ranges, onRa
                   : 'border-border text-muted hover:border-accent/40 hover:text-white',
               )}
             >
-              {c.label}
+              {c.id === 'all' ? t('filters.all') : c.labelKey}
             </button>
           ))}
         </div>
         <Input
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder="Rechercher un joueur…"
+          placeholder={t('filters.searchPlayer')}
           className="md:max-w-xs"
         />
       </div>
       {ranges && onRanges && (
         <div className="grid gap-3 border-t border-border pt-3 sm:grid-cols-3">
           <label className="text-xs">
-            <FieldLabel>Proba min (%)</FieldLabel>
+            <FieldLabel>{t('filters.probaMin')}</FieldLabel>
             <Input
               type="number"
               quant
@@ -68,7 +71,7 @@ export function FilterPills({ circuit, search, onCircuit, onSearch, ranges, onRa
             />
           </label>
           <label className="text-xs">
-            <FieldLabel>Cote min</FieldLabel>
+            <FieldLabel>{t('filters.oddMin')}</FieldLabel>
             <Input
               type="number"
               quant
@@ -80,7 +83,7 @@ export function FilterPills({ circuit, search, onCircuit, onSearch, ranges, onRa
             />
           </label>
           <label className="text-xs">
-            <FieldLabel>Cote max</FieldLabel>
+            <FieldLabel>{t('filters.oddMax')}</FieldLabel>
             <Input
               type="number"
               quant

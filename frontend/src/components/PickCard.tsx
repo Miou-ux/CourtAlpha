@@ -1,4 +1,5 @@
 import { Target } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { PickRow } from '../api/client'
 import { cn } from '../lib/utils'
 import { evTier } from '../lib/liveMetrics'
@@ -18,6 +19,7 @@ type PickCardProps = {
 }
 
 export function PickCard({ pick, index, onBet, featured }: PickCardProps) {
+  const { t } = useTranslation()
   const rank = pick.rank ?? index + 1
   const ev = pick.ev_fav_pct ?? pick.ev_pct ?? 0
   const proba = pickModelProbaPct(pick)
@@ -42,7 +44,7 @@ export function PickCard({ pick, index, onBet, featured }: PickCardProps) {
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className={cn('text-xs font-semibold uppercase tracking-wide', rank === 1 ? 'text-accent' : 'text-muted')}>
-            Pick #{rank}
+            {t('common.pickRank', { rank })}
           </p>
           <div className="mt-1">
             <PickMatchupDisplay pick={pick} variant="stacked" />
@@ -52,15 +54,15 @@ export function PickCard({ pick, index, onBet, featured }: PickCardProps) {
         <div className="flex flex-wrap justify-end gap-1">
           {tour.includes('ATP') && <Badge tone="atp">ATP</Badge>}
           {tour.includes('WTA') && <Badge tone="wta">WTA</Badge>}
-          {isPremium && <Badge tone="success">Value</Badge>}
-          {existingStake > 0 && <Badge tone="atp">Déjà {existingStake.toFixed(2)} €</Badge>}
+          {isPremium && <Badge tone="success">{t('common.value')}</Badge>}
+          {existingStake > 0 && <Badge tone="atp">{t('common.alreadyBet', { amount: existingStake.toFixed(2) })}</Badge>}
         </div>
       </div>
 
       <div className="grid grid-cols-2 items-end gap-3 rounded-xl border border-border bg-bg p-3">
-        <ProbaDisplay pct={proba} label="Proba modèle" />
+        <ProbaDisplay pct={proba} label={t('common.modelProba')} />
         <div>
-          <p className="text-xs text-muted">Cote</p>
+          <p className="text-xs text-muted">{t('common.odds')}</p>
           <p className="quant text-base font-semibold text-white">@{pick.odd_fav?.toFixed(2) ?? '—'}</p>
         </div>
       </div>
@@ -68,14 +70,14 @@ export function PickCard({ pick, index, onBet, featured }: PickCardProps) {
       <div className="mt-3 flex items-center justify-between gap-3">
         <p className="text-xs text-muted">
           {existingStake > 0 ? (
-            <span className="text-accent">Pari enregistré · {existingStake.toFixed(2)} €</span>
+            <span className="text-accent">{t('common.betRecorded', { amount: existingStake.toFixed(2) })}</span>
           ) : (
             pick.match_time || pick.surface || '—'
           )}
         </p>
         {onBet && (
           <Button variant="success" size="sm" onClick={() => onBet(pick)}>
-            <Target className="h-3.5 w-3.5" /> {existingStake > 0 ? 'Ajouter' : 'Parier'}
+            <Target className="h-3.5 w-3.5" /> {existingStake > 0 ? t('common.add') : t('common.bet')}
           </Button>
         )}
       </div>

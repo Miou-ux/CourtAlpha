@@ -1,15 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-
 import { useEffect, useState } from 'react'
-
 import { Link } from 'react-router-dom'
-
+import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
-
 import { api } from '../api/client'
-
 import { formatEthFromWei, payPremiumDeposit, payPremiumOrder } from '../lib/billingPay'
-
 import { useAuth } from '../context/AuthContext'
 
 type Props = {
@@ -17,6 +12,8 @@ type Props = {
 }
 
 export function PremiumCheckout({ planId = 'premium_30d' }: Props) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.startsWith('en') ? 'en-GB' : 'fr-FR'
   const { token, refreshSession } = useAuth()
   const [txHash, setTxHash] = useState<string | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
@@ -44,9 +41,9 @@ export function PremiumCheckout({ planId = 'premium_30d' }: Props) {
 
   const createMut = useMutation({
     mutationFn: async () => {
-      if (!token) throw new Error('Connectez-vous pour payer')
+      if (!token) throw new Error(t('premiumCheckout.signInToPay'))
       if (!cfg?.payments_enabled) {
-        throw new Error('Paiements ETH non activés sur le serveur')
+        throw new Error(t('premiumCheckout.paymentsDisabled'))
       }
       const created = await api.billingCreateOrder(token, planId)
       setOrderId(created.order.id)
@@ -58,9 +55,9 @@ export function PremiumCheckout({ planId = 'premium_30d' }: Props) {
 
   const payMut = useMutation({
     mutationFn: async () => {
-      if (!token) throw new Error('Connectez-vous pour payer')
+      if (!token) throw new Error(t('premiumCheckout.signInToPay'))
       if (!cfg?.payments_enabled) {
-        throw new Error('Paiements ETH non activés sur le serveur')
+        throw new Error(t('premiumCheckout.paymentsDisabled'))
       }
 
       let o = order
@@ -82,7 +79,7 @@ export function PremiumCheckout({ planId = 'premium_30d' }: Props) {
 
       const contract = (o.contract_address ?? cfg?.contract_address) as Address | null
       if (!contract) {
-        throw new Error('Paiement non configuré (adresse de dépôt ou contrat manquant)')
+        throw new Error(t('premiumCheckout.paymentNotConfigured'))
       }
 
       const hash = await payPremiumOrder({
@@ -104,27 +101,23 @@ export function PremiumCheckout({ planId = 'premium_30d' }: Props) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      setError('Copie impossible')
+      setError(t('premiumCheckout.copyFailed'))
     }
   }
 
   if (paid) {
     return (
       <div className="mt-5 space-y-2">
-        <p className="text-sm text-accent">Paiement confirmé — premium actif.</p>
+        <p className="text-sm text-accent">{t('premiumCheckout.paymentConfirmed')}</p>
         <Link to="/live" className="text-sm text-accent hover:underline">
-          Ouvrir le Live Tracker →
+          {t('premiumCheckout.openLive')}
         </Link>
       </div>
     )
   }
 
   if (!cfg?.payments_enabled) {
-    return (
-      <p className="mt-5 text-sm text-muted">
-        Paiement ETH en cours de configuration sur le serveur (mnemonic HD + RPC). Contactez l&apos;admin.
-      </p>
-    )
+    return <p className="mt-5 text-sm text-muted">{t('premiumCheckout.configPending')}</p>
   }
 
   const activeOrder = order ?? (createMut.data ?? null)
@@ -134,7 +127,7 @@ export function PremiumCheckout({ planId = 'premium_30d' }: Props) {
     <div className="mt-5 space-y-3">
       {plan && (
         <p className="text-sm">
-          Tarif : <span className="font-semibold text-accent">{formatEthFromWei(plan.price_wei)}</span>
+          {t('premiumCheckout.price')} : <span className="font-semibold text-accent">{formatEthFromWei(plan.price_wei)}</span>
           {' · '}
           {cfg.chain_id === 84532 ? 'Base Sepolia' : 'Base'}
         </p>
@@ -147,16 +140,16 @@ export function PremiumCheckout({ planId = 'premium_30d' }: Props) {
           onClick={() => void createMut.mutate()}
           className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-50"
         >
-          {createMut.isPending ? 'Création…' : 'Créer une commande'}
+          {createMut.isPending ? t('premiumCheckout.creating') : t('premiumCheckout.createOrder')}
         </button>
       )}
 
       {activeOrder?.deposit_address && (
         <div className="space-y-2 rounded-lg border border-border p-3 text-sm">
           <p>
-            Envoyez exactement{' '}
+            {t('premiumCheckout.sendExactly')}{' '}
             <span className="font-semibold text-accent">{formatEthFromWei(activeOrder.price_wei)}</span>{' '}
-            à cette adresse (Base) :
+            {t('premiumCheckout.toAddress')}
           </p>
           <p className="break-all font-mono text-xs text-fg">{activeOrder.deposit_address}</p>
           <button
@@ -164,11 +157,12 @@ export function PremiumCheckout({ planId = 'premium_30d' }: Props) {
             onClick={() => void copyDeposit(activeOrder.deposit_address!)}
             className="text-xs text-accent hover:underline"
           >
-            {copied ? 'Copié ✓' : 'Copier l&apos;adresse'}
+            {copied ? t('premiumCheckout.copied') : t('premiumCheckout.copyAddress')}
           </button>
           <p className="text-xs text-muted">
-            Commande valide jusqu&apos;à {new Date(activeOrder.expires_at).toLocaleString('fr-FR')}.
-            Confirmation automatique sous 1–2 min.
+            {t('premiumCheckout.orderValidUntil', {
+              date: new Date(activeOrder.expires_at).toLocaleString(locale),
+            })}
           </p>
         </div>
       )}
@@ -181,23 +175,21 @@ export function PremiumCheckout({ planId = 'premium_30d' }: Props) {
           className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-50"
         >
           {payMut.isPending
-            ? 'Wallet…'
+            ? t('premiumCheckout.walletPending')
             : activeOrder.deposit_address
-              ? 'Payer en ETH (MetaMask)'
-              : 'Payer via contrat (MetaMask)'}
+              ? t('premiumCheckout.payEthMetamask')
+              : t('premiumCheckout.payContractMetamask')}
         </button>
       )}
 
       {txHash && (
         <p className="text-xs text-muted">
           Tx : <span className="break-all font-mono text-fg">{txHash}</span>
-          {order?.status === 'pending' && ' — confirmation 1–2 min…'}
+          {order?.status === 'pending' && t('premiumCheckout.txConfirming')}
         </p>
       )}
       {error && <p className="text-sm text-red-400">{error}</p>}
-      {showDeposit && !activeOrder && (
-        <p className="text-xs text-muted">Créez une commande pour obtenir votre adresse de dépôt unique.</p>
-      )}
+      {showDeposit && !activeOrder && <p className="text-xs text-muted">{t('premiumCheckout.createOrderHint')}</p>}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { BetCreatePayload, PickRow } from '../api/client'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
@@ -25,6 +26,7 @@ type BetModalProps = {
 export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, trackerSource = 'live_tracker_web' }: BetModalProps) {
   const { token } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [stake, setStake] = useState('10')
   const [observedOddInput, setObservedOddInput] = useState('1.01')
   const [stakeTouched, setStakeTouched] = useState(false)
@@ -85,7 +87,7 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
       return
     }
     if (oddsEditable && (!Number.isFinite(parsedObservedOdd) || parsedObservedOdd < 1.01)) {
-      setError('Cote invalide (minimum 1.01)')
+      setError(t('betModal.invalidOdds'))
       return
     }
     setLoading(true)
@@ -115,22 +117,27 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
     }
   }
 
+  const evLabel = `${evPct >= 0 ? '+' : ''}${evPct.toFixed(1)}%`
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <Card variant="elevated" className="w-full max-w-md p-5">
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent">Confirmer le pari</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-accent">{t('betModal.title')}</p>
             <div className="mt-2">
               <PickMatchupDisplay pick={activePick} variant="stacked" showLabel={false} />
             </div>
             <p className="text-sm text-muted">
-              @{odds.toFixed(2)} · Proba modèle {formatProbaPct(pModelPct)} · EV {evPct >= 0 ? '+' : ''}
-              {evPct.toFixed(1)}%
+              {t('betModal.modelEv', {
+                odds: odds.toFixed(2),
+                proba: formatProbaPct(pModelPct),
+                ev: evLabel,
+              })}
             </p>
             {(activePick.existing_stake_eur ?? 0) > 0 && (
               <p className="mt-1 text-xs text-accent">
-                Déjà parié : {(activePick.existing_stake_eur ?? 0).toFixed(2)} € sur ce pick
+                {t('betModal.alreadyBetOnPick', { amount: (activePick.existing_stake_eur ?? 0).toFixed(2) })}
               </p>
             )}
           </div>
@@ -140,7 +147,7 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
         </div>
         {oddsEditable && (
           <label className="mb-3 block">
-            <FieldLabel>Cote observée</FieldLabel>
+            <FieldLabel>{t('common.observedOdds')}</FieldLabel>
             <Input
               type="text"
               inputMode="decimal"
@@ -150,12 +157,12 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
               placeholder={bookOdd.toFixed(2)}
             />
             {Number.isFinite(parsedObservedOdd) && Math.abs(parsedObservedOdd - bookOdd) > 0.001 && (
-              <p className="mt-1 text-xs text-muted">Réf. book @{bookOdd.toFixed(2)}</p>
+              <p className="mt-1 text-xs text-muted">{t('common.bookRef', { odd: bookOdd.toFixed(2) })}</p>
             )}
           </label>
         )}
         <label className="block">
-          <FieldLabel>Mise (€)</FieldLabel>
+          <FieldLabel>{t('betModal.stakeEur')}</FieldLabel>
           <Input
             type="number"
             quant
@@ -169,18 +176,21 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
           />
           {oddsEditable && bankrollAvail > 0 && (
             <p className="mt-1 text-xs text-muted">
-              Kelly ½ × Brier {segBrier.toFixed(3)} · reco {kelly.eur.toFixed(2)} € · BR dispo{' '}
-              {bankrollAvail.toFixed(2)} €
+              {t('betModal.kellyHint', {
+                brier: segBrier.toFixed(3),
+                reco: kelly.eur.toFixed(2),
+                bankroll: bankrollAvail.toFixed(2),
+              })}
             </p>
           )}
         </label>
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button variant="success" disabled={loading} onClick={() => void submit()}>
-            {loading ? 'Envoi…' : 'Confirmer'}
+            {loading ? t('common.sending') : t('common.confirm')}
           </Button>
         </div>
       </Card>

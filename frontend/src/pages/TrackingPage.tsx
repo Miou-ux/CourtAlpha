@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { api } from '../api/client'
 import { Badge } from '../components/Badge'
@@ -15,6 +16,7 @@ function pct(v: number | undefined | null, digits = 1) {
 }
 
 export function TrackingPage() {
+  const { t } = useTranslation()
   const { token } = useAuth()
   const q = useQuery({ queryKey: ['tracking', token], queryFn: () => api.tracking(token) })
 
@@ -25,24 +27,24 @@ export function TrackingPage() {
   return (
     <div>
       <PageHero
-        kicker="Réel vs modèle"
-        title="Tracking modèle"
-        subtitle="Paris enrichis clos · calibration et drift vs baseline 2025."
+        kicker={t('tracking.kicker')}
+        title={t('tracking.title')}
+        subtitle={t('tracking.subtitle')}
         stats={
           g
             ? [
-                { label: 'Paris', value: String(g.n) },
-                { label: 'Hit réel', value: pct(g.hit) },
-                { label: 'ROI réel', value: pct(g.realised_roi) },
+                { label: t('tracking.bets'), value: String(g.n) },
+                { label: t('tracking.realHit'), value: pct(g.hit) },
+                { label: t('tracking.realRoi'), value: pct(g.realised_roi) },
               ]
             : undefined
         }
       />
 
       {q.isLoading ? (
-        <p className="text-sm text-muted">Chargement…</p>
+        <p className="text-sm text-muted">{t('common.loading')}</p>
       ) : !data?.ok ? (
-        <EmptyState title="Pas assez de données" hint={data?.reason ?? 'Place des paris enrichis depuis la web UI.'} />
+        <EmptyState title={t('tracking.notEnoughData')} hint={data?.reason ?? t('tracking.defaultHint')} />
       ) : (
         <div className="space-y-6">
           {drift && (
@@ -67,10 +69,10 @@ export function TrackingPage() {
           {g && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: 'Hit attendu', value: pct(g.expected_hit) },
-                { label: 'ROI attendu', value: pct(g.expected_roi) },
-                { label: 'Brier', value: g.brier.toFixed(3) },
-                { label: 'Brier baseline', value: g.baseline_brier.toFixed(3) },
+                { label: t('tracking.expectedHit'), value: pct(g.expected_hit) },
+                { label: t('tracking.expectedRoi'), value: pct(g.expected_roi) },
+                { label: t('tracking.brier'), value: g.brier.toFixed(3) },
+                { label: t('tracking.brierBaseline'), value: g.baseline_brier.toFixed(3) },
               ].map((k) => (
                 <StatTile key={k.label} label={k.label} value={k.value} className="px-4 py-3" />
               ))}
@@ -79,7 +81,7 @@ export function TrackingPage() {
 
           {(data.calibration?.length ?? 0) > 0 && (
             <Card variant="default" className="p-4">
-              <p className="mb-3 text-xs uppercase tracking-wide text-muted">Calibration (déciles p_model)</p>
+              <p className="mb-3 text-xs uppercase tracking-wide text-muted">{t('tracking.calibrationTitle')}</p>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart
                   data={(data.calibration ?? []).map((c) => ({
@@ -91,10 +93,14 @@ export function TrackingPage() {
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke={BRAND.grid} />
                   <XAxis dataKey="bin_label" tick={{ fill: BRAND.muted, fontSize: 10 }} />
-                  <YAxis tick={{ fill: BRAND.muted, fontSize: 11 }} domain={[0, 1]} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
+                  <YAxis
+                    tick={{ fill: BRAND.muted, fontSize: 11 }}
+                    domain={[0, 1]}
+                    tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
+                  />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                  <Bar dataKey="observed_hit" fill={BRAND.teal} name="Hit observé" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="mean_p_model" fill={BRAND.lime} name="Prédit moyen" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="observed_hit" fill={BRAND.teal} name={t('tracking.observedHit')} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mean_p_model" fill={BRAND.lime} name={t('tracking.meanPredicted')} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>

@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check, Link2, Share2 } from 'lucide-react'
 import { SHARE_TRACK_RECORD_URL } from '../lib/seo'
 
 export function ShareTrackRecord() {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
 
   async function copyLink() {
@@ -19,8 +21,8 @@ export function ShareTrackRecord() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'CourtAlpha — 1 Day 1 Pick',
-          text: 'Track record public du pick tennis quotidien',
+          title: t('share.shareTitle'),
+          text: t('share.shareText'),
           url: SHARE_TRACK_RECORD_URL,
         })
         return
@@ -39,7 +41,7 @@ export function ShareTrackRecord() {
         className="inline-flex items-center gap-2 rounded-lg border border-border bg-panel px-3 py-2 text-sm text-white hover:border-accent/40"
       >
         <Share2 className="h-4 w-4 text-accent" />
-        Partager
+        {t('share.share')}
       </button>
       <button
         type="button"
@@ -47,7 +49,7 @@ export function ShareTrackRecord() {
         className="inline-flex items-center gap-2 rounded-lg border border-border bg-panel px-3 py-2 text-sm text-muted hover:border-accent/40 hover:text-white"
       >
         {copied ? <Check className="h-4 w-4 text-success" /> : <Link2 className="h-4 w-4" />}
-        {copied ? 'Lien copié' : 'Copier le lien'}
+        {copied ? t('share.linkCopied') : t('share.copyLink')}
       </button>
     </div>
   )

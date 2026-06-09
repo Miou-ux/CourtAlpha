@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Area,
   AreaChart,
@@ -22,13 +23,13 @@ import { FieldLabel, Input, Select } from '../components/ui/input'
 import { StatTile } from '../components/ui/stat-tile'
 import { useAuth } from '../context/AuthContext'
 import { BRAND, CHART_TOOLTIP_STYLE } from '../lib/brand'
+import { API_BET_STATUSES, translateBetStatus, type ApiBetStatusFilter } from '../lib/betStatus'
 
-const STATUS_OPTIONS = ['Tous', 'En cours', 'Gagné', 'Perdu', 'Annulé'] as const
-const SORT_OPTIONS = [
-  { value: 'recent', label: 'Plus récents' },
-  { value: 'oldest', label: 'Plus anciens' },
-  { value: 'profit_desc', label: 'Profit décroissant' },
-  { value: 'profit_asc', label: 'Profit croissant' },
+const SORT_OPTION_KEYS = [
+  { value: 'recent', labelKey: 'portfolioExt.sortRecent' },
+  { value: 'oldest', labelKey: 'portfolioExt.sortOldest' },
+  { value: 'profit_desc', labelKey: 'portfolioExt.sortProfitDesc' },
+  { value: 'profit_asc', labelKey: 'portfolioExt.sortProfitAsc' },
 ] as const
 
 function fmtEur(v: number | undefined | null, digits = 2) {
@@ -49,16 +50,16 @@ function statusTone(status?: string): 'success' | 'danger' | 'accent' | 'default
   return 'default'
 }
 
-function trackerLabel(src?: string) {
+function trackerLabel(src: string | undefined, t: (key: string) => string) {
   const map: Record<string, string> = {
-    telegram_bet: 'Telegram',
-    live_tracker: 'Live Tracker',
-    top5_proba_action: 'Paris du jour',
-    live_inplay_manual: 'In-play',
-    live_tracker_web: 'Web',
+    telegram_bet: t('portfolioExt.trackerTelegram'),
+    live_tracker: t('portfolioExt.trackerLive'),
+    top5_proba_action: t('portfolioExt.trackerParis'),
+    live_inplay_manual: t('portfolioExt.trackerInplay'),
+    live_tracker_web: t('portfolioExt.trackerWeb'),
   }
   const key = (src ?? '').trim()
-  if (!key) return 'Legacy'
+  if (!key) return t('portfolioExt.trackerLegacy')
   return map[key] ?? key
 }
 
@@ -70,12 +71,13 @@ type PortfolioPageProps = {
 }
 
 export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: loadingProp, onRefresh }: PortfolioPageProps) {
+  const { t } = useTranslation()
   const { token, user } = useAuth()
   const qc = useQueryClient()
 
-  const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('Tous')
+  const [statusFilter, setStatusFilter] = useState<ApiBetStatusFilter>('Tous')
   const [minStake, setMinStake] = useState(0)
-  const [sort, setSort] = useState<(typeof SORT_OPTIONS)[number]['value']>('recent')
+  const [sort, setSort] = useState<(typeof SORT_OPTION_KEYS)[number]['value']>('recent')
   const [brAdjustMode, setBrAdjustMode] = useState<'add' | 'withdraw' | null>(null)
 
   const summaryQ = useQuery({
@@ -136,10 +138,10 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
 
   const scopeHint =
     summary?.scope === 'telegram'
-      ? `Portefeuille Telegram @${user?.telegram_username ?? summary.telegram_user_id}`
+      ? t('portfolio.scopeTelegram', { handle: user?.telegram_username ?? summary.telegram_user_id })
       : summary?.scope === 'web'
-        ? `Portefeuille app · ${user?.display_name ?? user?.username ?? 'compte'}`
-        : 'Connectez-vous pour votre bankroll personnelle'
+        ? t('portfolio.scopeWeb', { name: user?.display_name ?? user?.username ?? 'compte' })
+        : t('portfolio.scopeGuest')
 
   const canAdjustBankroll = !!user && !!br && summary?.scope !== 'unlinked'
   const bankrollAvail = br?.available_eur ?? 0
@@ -147,59 +149,59 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
   return (
     <div className="space-y-6">
       <PageHero
-        kicker="Mon portefeuille"
-        title="Suivi des paris"
-        subtitle={`${scopeHint} — bankroll Kelly, P/L, CLV et actions ops comme Streamlit.`}
+        kicker={t('portfolio.kicker')}
+        title={t('portfolio.title')}
+        subtitle={`${scopeHint} ${t('portfolio.subtitleSuffix')}`}
         stats={
           br
             ? [
-                { label: 'BR dispo', value: `${br.available_eur.toFixed(0)} €`, highlight: true },
+                { label: t('header.available'), value: `${br.available_eur.toFixed(0)} €`, highlight: true },
                 {
-                  label: 'P/L net',
+                  label: t('portfolio.netPl'),
                   value: fmtEur(summary?.total_profit_eur ?? br.settled_profit_eur, 0),
                   highlight: (summary?.total_profit_eur ?? 0) >= 0,
                 },
-                { label: 'ROI', value: fmtPct(summary?.roi_pct) },
-                { label: 'Ouverts', value: String(summary?.n_bets_open ?? 0) },
+                { label: t('portfolio.roi'), value: fmtPct(summary?.roi_pct) },
+                { label: t('portfolio.open'), value: String(summary?.n_bets_open ?? 0) },
               ]
             : undefined
         }
       />
 
       {loading && !summary ? (
-        <p className="text-sm text-muted">Chargement du portefeuille…</p>
+        <p className="text-sm text-muted">{t('portfolio.loading')}</p>
       ) : (
         <>
           {br && (
             <Card variant="default" className="p-4">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs uppercase tracking-wide text-muted">Bankroll</p>
+                <p className="text-xs uppercase tracking-wide text-muted">{t('portfolio.bankroll')}</p>
                 {canAdjustBankroll && (
                   <div className="flex gap-2">
                     <Button variant="success" size="sm" onClick={() => setBrAdjustMode('add')}>
-                      Ajouter
+                      {t('portfolioExt.add')}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => setBrAdjustMode('withdraw')}>
-                      Retirer
+                      {t('portfolioExt.withdraw')}
                     </Button>
                   </div>
                 )}
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <StatTile label="BR dispo" value={`${bankrollAvail.toFixed(2)} €`} className="px-4 py-3" highlight />
-                <StatTile label="Référence" value={`${br.start_eur?.toFixed(2) ?? '—'} €`} className="px-4 py-3" />
-                <StatTile label="Engagé" value={`${br.committed_open_eur.toFixed(2)} €`} className="px-4 py-3" />
-                <StatTile label="Capital total" value={`${br.equity_eur.toFixed(2)} €`} className="px-4 py-3" />
+                <StatTile label={t('portfolioExt.brAvail')} value={`${bankrollAvail.toFixed(2)} €`} className="px-4 py-3" highlight />
+                <StatTile label={t('portfolioExt.reference')} value={`${br.start_eur?.toFixed(2) ?? '—'} €`} className="px-4 py-3" />
+                <StatTile label={t('portfolioExt.committed')} value={`${br.committed_open_eur.toFixed(2)} €`} className="px-4 py-3" />
+                <StatTile label={t('portfolioExt.totalCapital')} value={`${br.equity_eur.toFixed(2)} €`} className="px-4 py-3" />
               </div>
               {br.manual_adjust_eur != null && Math.abs(br.manual_adjust_eur) > 1e-6 && (
                 <p className="mt-2 text-xs text-muted">
-                  Ajustement manuel cumulé : {br.manual_adjust_eur >= 0 ? '+' : ''}
+                  {t('portfolioExt.manualAdjust')} : {br.manual_adjust_eur >= 0 ? '+' : ''}
                   {br.manual_adjust_eur.toFixed(2)} €
                 </p>
               )}
               {user && summary?.scope === 'telegram' && (
                 <p className="mt-2 text-xs text-muted">
-                  Bankroll synchronisée avec le bot Telegram (<code>/br</code>, dépôts / retraits).
+                  {t('portfolioExt.telegramSync')}
                 </p>
               )}
             </Card>
@@ -207,41 +209,41 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
 
           {!summary || summary.n_total === 0 ? (
             <EmptyState
-              title="Aucun pari enregistré"
-              hint="Confirme un pick depuis Paris du jour ou le Live Tracker pour alimenter le portefeuille."
+              title={t('portfolioExt.emptyTitle')}
+              hint={t('portfolioExt.emptyHint')}
             />
           ) : (
         <>
           {kelly && kelly.n_bets > 0 && (
             <Card variant="default" className="p-4">
-              <p className="mb-3 text-xs uppercase tracking-wide text-muted">Bankroll Kelly (app)</p>
+              <p className="mb-3 text-xs uppercase tracking-wide text-muted">{t('portfolioExt.kellyBankroll')}</p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                <StatTile label="Paris Kelly" value={String(kelly.n_bets)} className="px-4 py-3" />
-                <StatTile label="En cours" value={String(kelly.n_open)} className="px-4 py-3" />
-                <StatTile label="BR dispo" value={`${br?.available_eur.toFixed(2) ?? '—'} €`} className="px-4 py-3" highlight />
-                <StatTile label="Engagé" value={`${br?.committed_open_eur.toFixed(2) ?? '—'} €`} className="px-4 py-3" />
-                <StatTile label="Capital total" value={`${br?.equity_eur.toFixed(2) ?? '—'} €`} className="px-4 py-3" />
+                <StatTile label={t('portfolioExt.kellyBets')} value={String(kelly.n_bets)} className="px-4 py-3" />
+                <StatTile label={t('common.statusOpen')} value={String(kelly.n_open)} className="px-4 py-3" />
+                <StatTile label={t('portfolioExt.brAvail')} value={`${br?.available_eur.toFixed(2) ?? '—'} €`} className="px-4 py-3" highlight />
+                <StatTile label={t('portfolioExt.committed')} value={`${br?.committed_open_eur.toFixed(2) ?? '—'} €`} className="px-4 py-3" />
+                <StatTile label={t('portfolioExt.totalCapital')} value={`${br?.equity_eur.toFixed(2) ?? '—'} €`} className="px-4 py-3" />
               </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                <StatTile label="Profit net (clos)" value={fmtEur(kelly.settled_profit_eur)} className="px-4 py-3" />
-                <StatTile label="ROI clôturé" value={fmtPct(kelly.roi_pct)} className="px-4 py-3" />
-                <StatTile label="Winrate clos" value={fmtPct(kelly.win_rate_pct)} className="px-4 py-3" />
+                <StatTile label={t('portfolioExt.closedProfit')} value={fmtEur(kelly.settled_profit_eur)} className="px-4 py-3" />
+                <StatTile label={t('portfolioExt.closedRoi')} value={fmtPct(kelly.roi_pct)} className="px-4 py-3" />
+                <StatTile label={t('portfolioExt.closedWinrate')} value={fmtPct(kelly.win_rate_pct)} className="px-4 py-3" />
               </div>
               {kelly.n_top5 > 0 && (
-                <p className="mt-2 text-xs text-muted">{kelly.n_top5} pari(s) Paris du jour inclus.</p>
+                <p className="mt-2 text-xs text-muted">{t('portfolioExt.top5Included', { count: kelly.n_top5 })}</p>
               )}
             </Card>
           )}
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
             {[
-              { label: 'Paris totaux', value: String(summary.n_total) },
-              { label: 'Gagnés', value: String(summary.n_won) },
-              { label: 'Perdus', value: String(summary.n_lost) },
-              { label: 'Annulés', value: String(summary.n_void) },
-              { label: 'Winrate', value: fmtPct(summary.win_rate_pct) },
-              { label: 'Mises totales', value: `${summary.total_staked_eur.toFixed(1)} €` },
-              { label: 'Cote moy.', value: summary.avg_odds.toFixed(2) },
+              { label: t('portfolioExt.totalBets'), value: String(summary.n_total) },
+              { label: t('portfolioExt.won'), value: String(summary.n_won) },
+              { label: t('portfolioExt.lost'), value: String(summary.n_lost) },
+              { label: t('portfolioExt.void'), value: String(summary.n_void) },
+              { label: t('portfolioExt.winrate'), value: fmtPct(summary.win_rate_pct) },
+              { label: t('portfolioExt.totalStaked'), value: `${summary.total_staked_eur.toFixed(1)} €` },
+              { label: t('portfolioExt.avgOdds'), value: summary.avg_odds.toFixed(2) },
             ].map((k) => (
               <StatTile key={k.label} label={k.label} value={k.value} className="px-4 py-3" />
             ))}
@@ -251,7 +253,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
             <div className="space-y-6">
               {(summary.daily_curve?.length ?? 0) > 0 && (
                 <Card variant="default" className="p-4">
-                  <p className="mb-3 text-xs uppercase tracking-wide text-muted">Évolution du profit cumulé</p>
+                  <p className="mb-3 text-xs uppercase tracking-wide text-muted">{t('portfolioExt.cumulativePl')}</p>
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={summary.daily_curve}>
                       <CartesianGrid strokeDasharray="3 3" stroke={BRAND.grid} />
@@ -264,12 +266,12 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                         stroke={BRAND.lime}
                         strokeWidth={2}
                         dot={false}
-                        name="P/L cumulé"
+                        name={t('portfolioExt.cumulativePlChart')}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                   <p className="mt-2 text-xs text-muted">
-                    Drawdown max {fmtPct(summary.max_drawdown_pct)} · agrégé par jour de match
+                    {t('portfolioExt.drawdownHint', { pct: fmtPct(summary.max_drawdown_pct) })}
                   </p>
                   <ResponsiveContainer width="100%" height={120}>
                     <AreaChart data={summary.daily_curve}>
@@ -282,7 +284,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                         dataKey="drawdown_pct"
                         stroke="#FF4757"
                         fill="rgba(255,71,87,0.15)"
-                        name="Drawdown %"
+                        name={t('portfolioExt.drawdownPct')}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -291,12 +293,12 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
 
               {summary.clv && (
                 <Card variant="default" className="p-4">
-                  <p className="mb-3 text-xs uppercase tracking-wide text-muted">Closing Line Value (CLV)</p>
+                  <p className="mb-3 text-xs uppercase tracking-wide text-muted">{t('portfolioExt.clvTitle')}</p>
                   <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <StatTile label="CLV moyenne" value={`${summary.clv.mean_pct >= 0 ? '+' : ''}${summary.clv.mean_pct.toFixed(2)}%`} />
-                    <StatTile label="CLV médiane" value={`${summary.clv.median_pct >= 0 ? '+' : ''}${summary.clv.median_pct.toFixed(2)}%`} />
-                    <StatTile label="Avec closing" value={`${summary.clv.n_with_closing}/${summary.n_total}`} />
-                    <StatTile label="Couverture" value={fmtPct(summary.clv.coverage_pct)} />
+                    <StatTile label={t('portfolioExt.clvMean')} value={`${summary.clv.mean_pct >= 0 ? '+' : ''}${summary.clv.mean_pct.toFixed(2)}%`} />
+                    <StatTile label={t('portfolioExt.clvMedian')} value={`${summary.clv.median_pct >= 0 ? '+' : ''}${summary.clv.median_pct.toFixed(2)}%`} />
+                    <StatTile label={t('portfolioExt.withClosing')} value={`${summary.clv.n_with_closing}/${summary.n_total}`} />
+                    <StatTile label={t('portfolioExt.coverage')} value={fmtPct(summary.clv.coverage_pct)} />
                   </div>
                   {(summary.clv_curve?.length ?? 0) > 0 && (
                     <ResponsiveContainer width="100%" height={200}>
@@ -306,15 +308,15 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                         <YAxis yAxisId="clv" tick={{ fill: BRAND.muted, fontSize: 10 }} />
                         <YAxis yAxisId="pl" orientation="right" tick={{ fill: BRAND.muted, fontSize: 10 }} />
                         <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                        <Line yAxisId="clv" type="monotone" dataKey="cum_clv_pct" stroke={BRAND.teal} dot={false} name="CLV cumulée %" />
-                        <Line yAxisId="pl" type="monotone" dataKey="cum_profit_eur" stroke={BRAND.lime} dot={false} name="P/L cumulé €" />
+                        <Line yAxisId="clv" type="monotone" dataKey="cum_clv_pct" stroke={BRAND.teal} dot={false} name={t('portfolioExt.clvCumulative')} />
+                        <Line yAxisId="pl" type="monotone" dataKey="cum_profit_eur" stroke={BRAND.lime} dot={false} name={t('portfolioExt.cumulativePlChart')} />
                       </LineChart>
                     </ResponsiveContainer>
                   )}
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
                     {summary.clv_by_tour.length > 0 && (
                       <div>
-                        <p className="mb-2 text-xs text-muted">CLV par circuit</p>
+                        <p className="mb-2 text-xs text-muted">{t('portfolioExt.clvByTour')}</p>
                         <div className="space-y-1 text-sm">
                           {summary.clv_by_tour.map((r) => (
                             <div key={r.tour} className="flex justify-between border-b border-border/50 py-1">
@@ -327,7 +329,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                     )}
                     {summary.clv_by_segment.length > 0 && (
                       <div>
-                        <p className="mb-2 text-xs text-muted">CLV par segment</p>
+                        <p className="mb-2 text-xs text-muted">{t('portfolioExt.clvBySegment')}</p>
                         <div className="space-y-1 text-sm">
                           {summary.clv_by_segment.slice(0, 8).map((r) => (
                             <div key={r.segment} className="flex justify-between border-b border-border/50 py-1">
@@ -344,7 +346,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
             </div>
 
             <Card variant="elevated" className="h-fit p-4">
-              <p className="mb-3 text-xs uppercase tracking-wide text-muted">Actions</p>
+              <p className="mb-3 text-xs uppercase tracking-wide text-muted">{t('portfolioExt.actions')}</p>
               <div className="space-y-2">
                 <Button
                   variant="outline"
@@ -352,7 +354,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                   disabled={clvMut.isPending}
                   onClick={() => clvMut.mutate()}
                 >
-                  {clvMut.isPending ? 'CLV…' : 'Forcer MAJ CLV'}
+                  {clvMut.isPending ? t('portfolioExt.clvPending') : t('portfolioExt.forceClv')}
                 </Button>
                 <Button
                   variant="outline"
@@ -360,7 +362,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                   disabled={resultsMut.isPending}
                   onClick={() => resultsMut.mutate()}
                 >
-                  {resultsMut.isPending ? 'Résultats…' : 'Mettre à jour résultats'}
+                  {resultsMut.isPending ? t('portfolioExt.resultsPending') : t('portfolioExt.updateResults')}
                 </Button>
                 <Button
                   variant="outline"
@@ -369,23 +371,23 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                   onClick={() => reconMut.mutate()}
                 >
                   {reconMut.isPending
-                    ? 'Réconciliation…'
-                    : `Réconciliation 3 sources${reconQ.data?.due ? ' ⏰' : ''}`}
+                    ? t('portfolioExt.reconPending')
+                    : `${t('portfolioExt.reconcile3')}${reconQ.data?.due ? ' ⏰' : ''}`}
                 </Button>
               </div>
               {reconQ.data && (
                 <p className="mt-3 text-xs text-muted">
                   {reconQ.data.days_since == null
-                    ? 'Réconciliation jamais exécutée'
-                    : `Dernière réconciliation : il y a ${reconQ.data.days_since.toFixed(1)} j`}
+                    ? t('portfolioExt.reconNever')
+                    : t('portfolioExt.reconLast', { days: reconQ.data.days_since.toFixed(1) })}
                 </p>
               )}
               {(clvMut.data || resultsMut.data || reconMut.data) && (
                 <p className="mt-2 text-xs text-success">
-                  {clvMut.data && `CLV : ${clvMut.data.updated} mis à jour. `}
-                  {resultsMut.data && `${resultsMut.data.updated} pari(s) résolus. `}
+                  {clvMut.data && t('portfolioExt.clvUpdated', { count: clvMut.data.updated }) + ' '}
+                  {resultsMut.data && t('portfolioExt.betsResolved', { count: resultsMut.data.updated }) + ' '}
                   {reconMut.data?.summary &&
-                    `${String(reconMut.data.summary.checked ?? '?')} vérifiés.`}
+                    t('portfolioExt.checked', { count: String(reconMut.data.summary.checked ?? '?') })}
                 </p>
               )}
               {(clvMut.error || resultsMut.error || reconMut.error) && (
@@ -397,25 +399,25 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
           <Card variant="default" className="p-4">
             <div className="mb-4 grid gap-4 md:grid-cols-3">
               <label className="text-sm">
-                <FieldLabel>Statut</FieldLabel>
+                <FieldLabel>{t('portfolioExt.statusFilter')}</FieldLabel>
                 <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}>
-                  {STATUS_OPTIONS.map((s) => (
+                  {API_BET_STATUSES.map((s) => (
                     <option key={s} value={s}>
-                      {s}
+                      {translateBetStatus(s, t)}
                     </option>
                   ))}
                 </Select>
               </label>
               <label className="text-sm">
-                <FieldLabel>Mise min (€)</FieldLabel>
+                <FieldLabel>{t('portfolioExt.minStake')}</FieldLabel>
                 <Input type="number" quant min={0} step={0.5} value={minStake} onChange={(e) => setMinStake(Number(e.target.value))} />
               </label>
               <label className="text-sm">
-                <FieldLabel>Tri</FieldLabel>
+                <FieldLabel>{t('portfolioExt.sort')}</FieldLabel>
                 <Select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-                  {SORT_OPTIONS.map((o) => (
+                  {SORT_OPTION_KEYS.map((o) => (
                     <option key={o.value} value={o.value}>
-                      {o.label}
+                      {t(o.labelKey)}
                     </option>
                   ))}
                 </Select>
@@ -424,7 +426,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
 
             {pending.length > 0 && statusFilter !== 'Gagné' && statusFilter !== 'Perdu' && statusFilter !== 'Annulé' && (
               <div className="mb-6">
-                <p className="mb-3 text-xs uppercase tracking-wide text-muted">Paris en attente</p>
+                <p className="mb-3 text-xs uppercase tracking-wide text-muted">{t('portfolioExt.pendingBets')}</p>
                 <div className="space-y-2">
                   {pending.map((b) => (
                     <div
@@ -444,7 +446,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                           disabled={settleMut.isPending}
                           onClick={() => settleMut.mutate({ id: b.id, status: 'Gagné' })}
                         >
-                          Gagné
+                          {t('common.statusWon')}
                         </Button>
                         <Button
                           variant="outline"
@@ -452,7 +454,7 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                           disabled={settleMut.isPending}
                           onClick={() => settleMut.mutate({ id: b.id, status: 'Perdu' })}
                         >
-                          Perdu
+                          {t('common.statusLost')}
                         </Button>
                       </div>
                     </div>
@@ -461,21 +463,21 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
               </div>
             )}
 
-            <p className="mb-3 text-xs uppercase tracking-wide text-muted">Historique ({bets.length})</p>
+            <p className="mb-3 text-xs uppercase tracking-wide text-muted">{t('portfolioExt.history', { count: bets.length })}</p>
             <div className="overflow-x-auto rounded-xl border border-border">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b border-border bg-bg-elevated text-[11px] uppercase tracking-wide text-muted">
                   <tr>
-                    <th className="px-3 py-2">Match (jour)</th>
-                    <th className="px-3 py-2">Pari (jour)</th>
-                    <th className="px-3 py-2">Match</th>
-                    <th className="px-3 py-2">Sélection</th>
-                    <th className="px-3 py-2">Cote</th>
-                    <th className="px-3 py-2">Mise</th>
-                    <th className="px-3 py-2">P/L</th>
-                    <th className="px-3 py-2">CLV</th>
-                    <th className="px-3 py-2">Source</th>
-                    <th className="px-3 py-2">Statut</th>
+                    <th className="px-3 py-2">{t('portfolioExt.colMatchDay')}</th>
+                    <th className="px-3 py-2">{t('portfolioExt.colBetDay')}</th>
+                    <th className="px-3 py-2">{t('portfolioExt.colMatch')}</th>
+                    <th className="px-3 py-2">{t('portfolioExt.colSelection')}</th>
+                    <th className="px-3 py-2">{t('portfolioExt.colOdds')}</th>
+                    <th className="px-3 py-2">{t('portfolioExt.colStake')}</th>
+                    <th className="px-3 py-2">{t('portfolioExt.colPl')}</th>
+                    <th className="px-3 py-2">{t('portfolioExt.colClv')}</th>
+                    <th className="px-3 py-2">{t('portfolioExt.colSource')}</th>
+                    <th className="px-3 py-2">{t('portfolioExt.colStatus')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -493,9 +495,9 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                       <td className="quant px-3 py-2 text-teal">
                         {b.clv_score != null ? `${(b.clv_score * 100).toFixed(1)}%` : '—'}
                       </td>
-                      <td className="px-3 py-2 text-xs text-muted">{trackerLabel(b.tracker_source)}</td>
+                      <td className="px-3 py-2 text-xs text-muted">{trackerLabel(b.tracker_source, t)}</td>
                       <td className="px-3 py-2">
-                        <Badge tone={statusTone(b.status)}>{b.status || '—'}</Badge>
+                        <Badge tone={statusTone(b.status)}>{translateBetStatus(b.status, t)}</Badge>
                       </td>
                     </tr>
                   ))}

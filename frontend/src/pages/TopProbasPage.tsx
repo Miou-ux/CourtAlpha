@@ -1,16 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { api } from '../api/client'
 import { EmptyState } from '../components/EmptyState'
 import { PageHero } from '../components/PageHero'
 import { useAuth } from '../context/AuthContext'
-
 import { BRAND, CHART_TOOLTIP_STYLE } from '../lib/brand'
 
 const TOUR_COLORS: Record<string, string> = { ATP: BRAND.atp, WTA: BRAND.wta, '—': BRAND.muted }
 
 export function TopProbasPage() {
+  const { t } = useTranslation()
   const { token } = useAuth()
   const [includeChallengers, setIncludeChallengers] = useState(false)
   const q = useQuery({
@@ -25,12 +26,12 @@ export function TopProbasPage() {
   return (
     <div>
       <PageHero
-        kicker="Modèle"
-        title="Top probas jour"
-        subtitle="Favori modèle · bande EV +15 % à +100 % · tri proba décroissante."
+        kicker={t('topProbas.kicker')}
+        title={t('topProbas.title')}
+        subtitle={t('topProbas.subtitle')}
         stats={[
-          { label: 'Top', value: String(rows.length) },
-          { label: 'Pool', value: String(q.data?.n_pool ?? 0) },
+          { label: t('topProbas.top'), value: String(rows.length) },
+          { label: t('topProbas.pool'), value: String(q.data?.n_pool ?? 0) },
         ]}
       />
 
@@ -42,26 +43,28 @@ export function TopProbasPage() {
             onChange={(e) => setIncludeChallengers(e.target.checked)}
             className="accent-accent"
           />
-          Inclure challengers
+          {t('topProbas.includeChallengers')}
         </label>
         {q.data?.snapshot_age_min != null && (
-          <span className="text-xs text-muted">Snapshot · {Math.round(q.data.snapshot_age_min)} min</span>
+          <span className="text-xs text-muted">
+            {t('topProbas.snapshotAge', { min: Math.round(q.data.snapshot_age_min) })}
+          </span>
         )}
       </div>
 
       {q.isLoading ? (
-        <p className="text-sm text-muted">Chargement…</p>
+        <p className="text-sm text-muted">{t('common.loading')}</p>
       ) : q.isError ? (
         <EmptyState
-          title="Impossible de charger les probas"
-          hint={q.error instanceof Error ? q.error.message : 'Reconnecte-toi et réessaie.'}
+          title={t('topProbas.loadErrorTitle')}
+          hint={q.error instanceof Error ? q.error.message : t('topProbas.loadErrorHint')}
         />
       ) : rows.length === 0 ? (
-        <EmptyState title="Aucun match dans le périmètre" hint="Élargis le scope (challengers) ou vérifie le snapshot live." />
+        <EmptyState title={t('topProbas.emptyTitle')} hint={t('topProbas.emptyHint')} />
       ) : (
         <div className="space-y-6">
           <div className="glass rounded-2xl border border-border p-4">
-            <p className="mb-3 text-xs uppercase tracking-wide text-muted">Proba modèle vs book (favori)</p>
+            <p className="mb-3 text-xs uppercase tracking-wide text-muted">{t('topProbas.chartTitle')}</p>
             <div className="h-[max(360px,26px*var(--n))]" style={{ ['--n' as string]: chart.length }}>
               <ResponsiveContainer width="100%" height={Math.max(360, chart.length * 26 + 48)}>
                 <BarChart data={chart} layout="vertical" margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
@@ -72,7 +75,7 @@ export function TopProbasPage() {
                   {[50, 70, 80].map((pct) => (
                     <ReferenceLine key={pct} x={pct} stroke={BRAND.refLine} strokeDasharray="4 4" />
                   ))}
-                  <Bar dataKey="proba_model_pct" name="Proba modèle" radius={[0, 4, 4, 0]}>
+                  <Bar dataKey="proba_model_pct" name={t('topProbas.modelProba')} radius={[0, 4, 4, 0]}>
                     {chart.map((row) => (
                       <Cell key={row.rank} fill={TOUR_COLORS[row.tour] ?? BRAND.navy} />
                     ))}
@@ -87,12 +90,12 @@ export function TopProbasPage() {
               <thead className="border-b border-border bg-bg-elevated text-[11px] uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">Proba</th>
-                  <th className="px-4 py-3">Favori</th>
-                  <th className="px-4 py-3">Adversaire</th>
-                  <th className="px-4 py-3">Tournoi</th>
-                  <th className="px-4 py-3">EV fav</th>
-                  <th className="px-4 py-3">Gap book</th>
+                  <th className="px-4 py-3">{t('topProbas.colProba')}</th>
+                  <th className="px-4 py-3">{t('topProbas.colFavorite')}</th>
+                  <th className="px-4 py-3">{t('topProbas.colOpponent')}</th>
+                  <th className="px-4 py-3">{t('topProbas.colTournament')}</th>
+                  <th className="px-4 py-3">{t('topProbas.colEvFav')}</th>
+                  <th className="px-4 py-3">{t('topProbas.colGapBook')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,7 +106,9 @@ export function TopProbasPage() {
                     <td className="px-4 py-3 font-medium">{r.favori}</td>
                     <td className="px-4 py-3 text-muted">{r.adversaire}</td>
                     <td className="px-4 py-3 text-muted">{r.tournament}</td>
-                    <td className="quant px-4 py-3">{r.ev_fav_pct != null ? `${r.ev_fav_pct >= 0 ? '+' : ''}${r.ev_fav_pct.toFixed(1)}%` : '—'}</td>
+                    <td className="quant px-4 py-3">
+                      {r.ev_fav_pct != null ? `${r.ev_fav_pct >= 0 ? '+' : ''}${r.ev_fav_pct.toFixed(1)}%` : '—'}
+                    </td>
                     <td className={`quant px-4 py-3 ${r.gap_warn ? 'text-warning' : ''}`}>
                       {r.gap_pp != null ? `${r.gap_pp.toFixed(1)} pp` : '—'}
                     </td>

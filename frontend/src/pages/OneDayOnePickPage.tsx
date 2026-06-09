@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { api, type OneDayOnePickRow } from '../api/client'
 import { Badge } from '../components/Badge'
@@ -12,7 +13,8 @@ import { BRAND, CHART_TOOLTIP_STYLE } from '../lib/brand'
 import { formatTennisScoreDisplay } from '../lib/scoreDisplay'
 import { ShareTrackRecord } from '../components/ShareTrackRecord'
 import { SeoEditorial } from '../components/SeoEditorial'
-import { ONE_DAY_ONE_PICK_EDITORIAL } from '../lib/seo'
+import { getOneDayOnePickEditorial } from '../lib/seo'
+import { translateBetStatus } from '../lib/betStatus'
 import { cn } from '../lib/utils'
 
 function pickScore(p: OneDayOnePickRow): string {
@@ -26,15 +28,18 @@ function statusTone(pick: OneDayOnePickRow): 'success' | 'danger' | 'accent' | '
   return 'default'
 }
 
-function statusLabel(pick: OneDayOnePickRow): string {
-  if (pick.status) return pick.status
-  if (pick.won) return 'Gagné'
-  if (pick.lost) return 'Perdu'
-  if (pick.open) return 'En cours'
-  return '—'
-}
-
 export function OneDayOnePickPage() {
+  const { t, i18n } = useTranslation()
+  const editorial = getOneDayOnePickEditorial(i18n.language)
+
+  function statusLabel(pick: OneDayOnePickRow): string {
+    if (pick.status) return translateBetStatus(pick.status, t)
+    if (pick.won) return t('common.statusWon')
+    if (pick.lost) return t('common.statusLost')
+    if (pick.open) return t('common.statusOpen')
+    return '—'
+  }
+
   const q = useQuery({
     queryKey: ['one-day-one-pick'],
     queryFn: () => api.picksOneDayOnePick(),
@@ -51,45 +56,45 @@ export function OneDayOnePickPage() {
   return (
     <div>
       <PageHero
-        kicker="Public replay"
-        title="1 Day 1 Pick"
-        subtitle="Un pick par jour calendaire sur les tournois majeurs : meilleur rank=1 entre ATP et WTA (proba favori modèle max). Bankroll initiale fixe de 100 € — courbe et P/L calculés sur cette base. Le pick du jour se met à jour depuis le snapshot live ; l'historique s'allonge automatiquement."
+        kicker={t('oneDayOnePick.kicker')}
+        title={t('oneDayOnePick.title')}
+        subtitle={t('oneDayOnePick.subtitle')}
         stats={
           summary
             ? [
-                { label: 'BR initiale', value: '100 €' },
-                { label: 'Picks', value: String(summary.n_picks), highlight: true },
-                { label: 'Hit %', value: `${summary.hit_pct.toFixed(1)}%` },
-                { label: 'P/L net', value: `${summary.net_profit_eur >= 0 ? '+' : ''}${summary.net_profit_eur.toFixed(0)} €` },
-                { label: 'BR finale', value: `${summary.bankroll_final_eur.toFixed(0)} €` },
+                { label: t('oneDayOnePick.initialBr'), value: '100 €' },
+                { label: t('oneDayOnePick.picks'), value: String(summary.n_picks), highlight: true },
+                { label: t('oneDayOnePick.hitPct'), value: `${summary.hit_pct.toFixed(1)}%` },
+                {
+                  label: t('oneDayOnePick.netPl'),
+                  value: `${summary.net_profit_eur >= 0 ? '+' : ''}${summary.net_profit_eur.toFixed(0)} €`,
+                },
+                { label: t('oneDayOnePick.finalBr'), value: `${summary.bankroll_final_eur.toFixed(0)} €` },
               ]
-            : [{ label: 'BR initiale', value: '100 €' }]
+            : [{ label: t('oneDayOnePick.initialBr'), value: '100 €' }]
         }
       />
 
       <ShareTrackRecord />
 
       {q.isLoading ? (
-        <p className="text-sm text-muted">Chargement du replay…</p>
+        <p className="text-sm text-muted">{t('oneDayOnePick.loading')}</p>
       ) : q.isError ? (
         <EmptyState
-          title="Impossible de charger le replay"
-          hint={q.error instanceof Error ? q.error.message : 'Réessaie dans quelques instants.'}
+          title={t('oneDayOnePick.errorTitle')}
+          hint={q.error instanceof Error ? q.error.message : t('oneDayOnePick.errorHint')}
         />
       ) : picks.length === 0 && !pickToday ? (
-        <EmptyState
-          title="Aucun pick dans le périmètre"
-          hint="Aucun majeur rank=1 avec EV 15–100 % aujourd'hui. L'historique se remplit au fil des captures daemon."
-        />
+        <EmptyState title={t('oneDayOnePick.emptyTitle')} hint={t('oneDayOnePick.emptyHint')} />
       ) : (
         <div className="space-y-6">
           {pickToday && (
             <section>
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-accent">Pick du jour</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-accent">{t('oneDayOnePick.pickOfDay')}</p>
                 <Badge tone="accent">{todayDate ?? pickToday.calendar_date}</Badge>
-                {pickToday.source === 'live' && <Badge tone="default">Snapshot live</Badge>}
-                {pickToday.open && <Badge tone="accent">En cours</Badge>}
+                {pickToday.source === 'live' && <Badge tone="default">{t('oneDayOnePick.liveSnapshot')}</Badge>}
+                {pickToday.open && <Badge tone="accent">{t('common.statusOpen')}</Badge>}
               </div>
               <PickCard pick={{ ...pickToday, rank: pickToday.day_rank }} index={0} featured />
             </section>
@@ -97,7 +102,11 @@ export function OneDayOnePickPage() {
 
           {period?.start_date && period.end_date && (
             <p className="text-sm text-muted">
-              Période {period.start_date} → {period.end_date} · {period.n_days} jour(s)
+              {t('oneDayOnePick.period', {
+                start: period.start_date,
+                end: period.end_date,
+                days: period.n_days,
+              })}
             </p>
           )}
 
@@ -105,21 +114,22 @@ export function OneDayOnePickPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
-                  label: 'P/L net',
+                  key: 'netPl',
+                  label: t('oneDayOnePick.netPl'),
                   value: `${summary.net_profit_eur >= 0 ? '+' : ''}${summary.net_profit_eur.toFixed(0)} €`,
                 },
-                { label: 'Croissance', value: `${summary.growth_pct.toFixed(1)}%` },
-                { label: 'ROI misé', value: `${summary.roi_on_staked_pct.toFixed(1)}%` },
-                { label: 'Max DD', value: `${summary.max_drawdown_pct.toFixed(1)}%` },
+                { key: 'growth', label: t('oneDayOnePick.growth'), value: `${summary.growth_pct.toFixed(1)}%` },
+                { key: 'roi', label: t('oneDayOnePick.roiStaked'), value: `${summary.roi_on_staked_pct.toFixed(1)}%` },
+                { key: 'dd', label: t('oneDayOnePick.maxDd'), value: `${summary.max_drawdown_pct.toFixed(1)}%` },
               ].map((k) => (
-                <StatTile key={k.label} label={k.label} value={k.value} className="px-4 py-3" />
+                <StatTile key={k.key} label={k.label} value={k.value} className="px-4 py-3" />
               ))}
             </div>
           )}
 
           {curve.length > 0 && (
             <Card variant="default" className="p-4">
-              <p className="mb-3 text-xs uppercase tracking-wide text-muted">Courbe bankroll cumulative</p>
+              <p className="mb-3 text-xs uppercase tracking-wide text-muted">{t('oneDayOnePick.cumulativeCurve')}</p>
               <ResponsiveContainer width="100%" height={320}>
                 <LineChart data={curve}>
                   <CartesianGrid strokeDasharray="3 3" stroke={BRAND.grid} />
@@ -137,15 +147,15 @@ export function OneDayOnePickPage() {
               <thead className="border-b border-border bg-bg-elevated text-[11px] uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Match · pari sur le favori</th>
-                  <th className="px-4 py-3">Tournoi</th>
-                  <th className="px-4 py-3">Proba</th>
-                  <th className="px-4 py-3">EV</th>
-                  <th className="px-4 py-3">Cote</th>
-                  <th className="px-4 py-3">Mise %</th>
-                  <th className="px-4 py-3">Résultat</th>
-                  <th className="px-4 py-3">Score</th>
+                  <th className="px-4 py-3">{t('oneDayOnePick.colDate')}</th>
+                  <th className="px-4 py-3">{t('oneDayOnePick.colMatch')}</th>
+                  <th className="px-4 py-3">{t('oneDayOnePick.colTournament')}</th>
+                  <th className="px-4 py-3">{t('oneDayOnePick.colProba')}</th>
+                  <th className="px-4 py-3">{t('oneDayOnePick.colEv')}</th>
+                  <th className="px-4 py-3">{t('oneDayOnePick.colOdds')}</th>
+                  <th className="px-4 py-3">{t('oneDayOnePick.colStakePct')}</th>
+                  <th className="px-4 py-3">{t('oneDayOnePick.colResult')}</th>
+                  <th className="px-4 py-3">{t('oneDayOnePick.colScore')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -187,9 +197,9 @@ export function OneDayOnePickPage() {
       )}
 
       <SeoEditorial
-        title={ONE_DAY_ONE_PICK_EDITORIAL.title}
-        paragraphs={ONE_DAY_ONE_PICK_EDITORIAL.paragraphs}
-        links={ONE_DAY_ONE_PICK_EDITORIAL.links}
+        title={editorial.title}
+        paragraphs={editorial.paragraphs}
+        links={editorial.links}
       />
     </div>
   )

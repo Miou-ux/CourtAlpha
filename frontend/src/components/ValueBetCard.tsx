@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ChevronDown, Target } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { LiveValueBet } from '../api/client'
 import { cn } from '../lib/utils'
 import { computeEvPct, computeKellyStake, evTier, isPremiumSegment } from '../lib/liveMetrics'
@@ -20,6 +21,7 @@ type ValueBetCardProps = {
 }
 
 export function ValueBetCard({ pick, bankrollAvail, onBet }: ValueBetCardProps) {
+  const { t } = useTranslation()
   const bookOdd = pick.odd_book ?? pick.odd_fav ?? 1.01
   const trueOdd = pick.true_odd ?? 1.01
   const [customOdd, setCustomOdd] = useState(bookOdd)
@@ -62,21 +64,21 @@ export function ValueBetCard({ pick, bankrollAvail, onBet }: ValueBetCardProps) 
         <div className="flex flex-wrap items-center gap-1">
           {tour.includes('ATP') && <Badge tone="atp">ATP</Badge>}
           {tour.includes('WTA') && <Badge tone="wta">WTA</Badge>}
-          {pick.is_value && <Badge tone="success">Value</Badge>}
-          {premium && <Badge tone="success">Premium</Badge>}
-          {existingStake > 0 && <Badge tone="atp">Déjà {existingStake.toFixed(2)} €</Badge>}
+          {pick.is_value && <Badge tone="success">{t('common.value')}</Badge>}
+          {premium && <Badge tone="success">{t('common.premium')}</Badge>}
+          {existingStake > 0 && <Badge tone="atp">{t('common.alreadyBet', { amount: existingStake.toFixed(2) })}</Badge>}
         </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-3">
-        <ProbaDisplay pct={pModelPct} label="Proba modèle" size="lg" />
-        <Metric label="Mise reco" value={`${kelly.eur.toFixed(2)} €`} variant="stake" />
-        <Metric label="Cote" value={`@${customOdd.toFixed(2)}`} />
+        <ProbaDisplay pct={pModelPct} label={t('common.modelProba')} size="lg" />
+        <Metric label={t('common.recommendedStake')} value={`${kelly.eur.toFixed(2)} €`} variant="stake" />
+        <Metric label={t('common.odds')} value={`@${customOdd.toFixed(2)}`} />
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-xs">
-          <FieldLabel className="mb-0 shrink-0">Cote observée</FieldLabel>
+          <FieldLabel className="mb-0 shrink-0">{t('common.observedOdds')}</FieldLabel>
           <Input
             type="number"
             quant
@@ -89,15 +91,15 @@ export function ValueBetCard({ pick, bankrollAvail, onBet }: ValueBetCardProps) 
           />
         </label>
         {Math.abs(customOdd - bookOdd) > 0.001 && (
-          <p className="text-xs text-muted">Réf. book @{bookOdd.toFixed(2)}</p>
+          <p className="text-xs text-muted">{t('common.bookRef', { odd: bookOdd.toFixed(2) })}</p>
         )}
         <div className="ml-auto flex flex-wrap gap-2">
           <Button variant="ghost" size="sm" onClick={() => setDetailsOpen((o) => !o)} aria-expanded={detailsOpen}>
-            Détails
+            {t('common.details')}
             <ChevronDown className={cn('h-4 w-4 transition', detailsOpen && 'rotate-180')} />
           </Button>
           <Button variant="success" size="sm" onClick={() => onBet(pick, customOdd, kelly.eur)}>
-            <Target className="h-4 w-4" /> {existingStake > 0 ? 'Ajouter' : 'Parier'}
+            <Target className="h-4 w-4" /> {existingStake > 0 ? t('common.add') : t('common.bet')}
           </Button>
         </div>
       </div>
@@ -113,23 +115,26 @@ export function ValueBetCard({ pick, bankrollAvail, onBet }: ValueBetCardProps) 
               tier === 'neg' && 'border-danger/30 bg-danger/5',
             )}
           >
-            <OddsCompareCell label="Book" odd={bookOdd} evPct={evBook} />
-            <OddsCompareCell
-              label="Fair / modèle"
-              odd={trueOdd}
-              probaPct={pModelPct}
-            />
-            <OddsCompareCell label="Ta cote" odd={customOdd} evPct={evCustom} highlight />
+            <OddsCompareCell label={t('common.book')} odd={bookOdd} evPct={evBook} />
+            <OddsCompareCell label={t('common.fairModel')} odd={trueOdd} probaPct={pModelPct} />
+            <OddsCompareCell label={t('common.yourOdds')} odd={customOdd} evPct={evCustom} highlight />
           </div>
 
           <WhyValuePanel explain={pick.why_value} />
 
           <p className="text-xs text-muted">
-            Kelly ½ × Brier {segBrier.toFixed(3)} (×{kelly.brierFactor.toFixed(2)}) · BR dispo {bankrollAvail.toFixed(2)} €
+            {t('valueBetCard.kellyMeta', {
+              brier: segBrier.toFixed(3),
+              factor: kelly.brierFactor.toFixed(2),
+              bankroll: bankrollAvail.toFixed(2),
+            })}
             {(pick.sharpe_ratio != null || pick.priority_score != null) && (
               <>
                 {' '}
-                · Sharpe {pick.sharpe_ratio?.toFixed(3) ?? '—'} · Priorité {pick.priority_score?.toFixed(4) ?? '—'}
+                {t('valueBetCard.sharpePriority', {
+                  sharpe: pick.sharpe_ratio?.toFixed(3) ?? '—',
+                  priority: pick.priority_score?.toFixed(4) ?? '—',
+                })}
               </>
             )}
           </p>

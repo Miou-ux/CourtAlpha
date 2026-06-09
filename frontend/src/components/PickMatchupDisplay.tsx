@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { PickRow } from '../api/client'
 import { cn } from '../lib/utils'
 import { pickBetOn, pickOpponent } from '../lib/pickDisplay'
@@ -16,6 +17,7 @@ export function PickMatchupDisplay({
   showLabel = true,
   className,
 }: PickMatchupDisplayProps) {
+  const { t } = useTranslation()
   const betOn = pickBetOn(pick)
   const opponent = pickOpponent(pick)
 
@@ -24,7 +26,7 @@ export function PickMatchupDisplay({
       <p className={cn('leading-snug', className)}>
         {showLabel && (
           <span className="mr-1.5 inline-flex rounded-md bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
-            Pari
+            {t('pickMatchup.bet')}
           </span>
         )}
         <span className="font-bold text-white">{betOn}</span>
@@ -48,7 +50,7 @@ export function PickMatchupDisplay({
   return (
     <div className={cn('min-w-0', className)}>
       {showLabel && (
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">Pari sur</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">{t('pickMatchup.betOn')}</p>
       )}
       <p className="mt-0.5 text-lg font-bold leading-tight text-white md:text-xl">{betOn}</p>
       <p className="mt-1 text-sm leading-snug text-muted">

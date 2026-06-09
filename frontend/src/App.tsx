@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Header } from './components/layout/Header'
@@ -180,6 +181,7 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
 }
 
 function App() {
+  const { t } = useTranslation()
   const location = useLocation()
   const data = useDashboardData()
   usePageSeo()
@@ -216,7 +218,7 @@ function App() {
         <button
           type="button"
           className="fixed inset-0 z-30 bg-black/60 md:hidden"
-          aria-label="Fermer le menu"
+          aria-label={t('app.closeMenu')}
           onClick={() => setMobileNavOpen(false)}
         />
       )}

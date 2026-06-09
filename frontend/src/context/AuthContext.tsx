@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, type AuthUser, type ProfileUpdatePayload } from '../api/client'
+import i18n from '../i18n'
 
 type AuthState = {
   user: AuthUser | null
@@ -83,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = useCallback(
     async (body: ProfileUpdatePayload) => {
-      if (!token) throw new Error('Non connecté')
+      if (!token) throw new Error(i18n.t('auth.notSignedIn'))
       const res = await api.authUpdateProfile(token, body)
       setUser(res.user)
     },
@@ -92,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const uploadAvatar = useCallback(
     async (file: File) => {
-      if (!token) throw new Error('Non connecté')
+      if (!token) throw new Error(i18n.t('auth.notSignedIn'))
       const res = await api.authUploadAvatar(token, file)
       setUser(res.user)
     },

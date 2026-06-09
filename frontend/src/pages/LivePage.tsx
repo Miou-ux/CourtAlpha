@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { LiveValueBet } from '../api/client'
 import { api } from '../api/client'
 import { BetModal } from '../components/BetModal'
@@ -41,6 +42,7 @@ function parseOptionalNumber(raw: string): number | null {
 }
 
 export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
+  const { t } = useTranslation()
   const { token, user } = useAuth()
   const navigate = useNavigate()
   const [circuit, setCircuit] = useState<CircuitFilter>('all')
@@ -82,14 +84,14 @@ export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
   return (
     <div>
       <PageHero
-        kicker="Live database"
-        title="Live Tracker"
-        subtitle="Value bets du jour — cote ajustable, EV temps réel, mise Kelly reco."
+        kicker={t('live.kicker')}
+        title={t('live.title')}
+        subtitle={t('live.subtitle')}
         stats={[
-          { label: 'Scannés', value: String(q.data?.n_scanned ?? scanned) },
-          { label: 'Tuiles', value: String(filtered.length), highlight: filtered.length > 0 },
+          { label: t('header.scanned'), value: String(q.data?.n_scanned ?? scanned) },
+          { label: t('live.tiles'), value: String(filtered.length), highlight: filtered.length > 0 },
           ...(user
-            ? [{ label: 'BR dispo', value: `${bankrollAvail.toFixed(0)} €` }]
+            ? [{ label: t('header.available'), value: `${bankrollAvail.toFixed(0)} €` }]
             : []),
         ]}
       />
@@ -112,7 +114,7 @@ export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
               mode === 'value' ? 'bg-accent/20 font-medium text-white' : 'text-muted hover:text-white',
             )}
           >
-            Value EV 15%+
+            {t('live.modeValue')}
           </button>
           <button
             type="button"
@@ -122,7 +124,7 @@ export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
               mode === 'all' ? 'bg-accent/20 font-medium text-white' : 'text-muted hover:text-white',
             )}
           >
-            Tous les matchs
+            {t('live.modeAll')}
           </button>
         </div>
       </div>
@@ -133,12 +135,8 @@ export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
         <p className="text-sm text-danger">{String(q.error)}</p>
       ) : filtered.length === 0 ? (
         <EmptyState
-          title="Aucune tuile pour ces filtres"
-          hint={
-            mode === 'value'
-              ? 'Assouplis proba/cote, passe en « Tous les matchs », ou vide les filtres.'
-              : 'Assouplis les filtres proba/cote ou vérifie le snapshot.'
-          }
+          title={t('live.emptyTitle')}
+          hint={mode === 'value' ? t('live.emptyHintValue') : t('live.emptyHintAll')}
         />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">

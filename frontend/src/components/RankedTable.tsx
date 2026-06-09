@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { PickRow } from '../api/client'
 import { pickModelProbaPct } from '../lib/modelProba'
 import { PickMatchupDisplay } from './PickMatchupDisplay'
@@ -7,6 +8,8 @@ type RankedTableProps = {
 }
 
 export function RankedTable({ picks }: RankedTableProps) {
+  const { t } = useTranslation()
+
   if (picks.length === 0) return null
 
   return (
@@ -15,11 +18,11 @@ export function RankedTable({ picks }: RankedTableProps) {
         <thead className="border-b border-border bg-bg-elevated text-[11px] uppercase tracking-wide text-muted">
           <tr>
             <th className="px-4 py-3">#</th>
-            <th className="px-4 py-3">Match · pari sur le favori</th>
-            <th className="px-4 py-3">Tournoi</th>
-            <th className="px-4 py-3">Proba</th>
-            <th className="px-4 py-3">EV</th>
-            <th className="px-4 py-3">Cote</th>
+            <th className="px-4 py-3">{t('rankedTable.colMatch')}</th>
+            <th className="px-4 py-3">{t('rankedTable.colTournament')}</th>
+            <th className="px-4 py-3">{t('rankedTable.colProba')}</th>
+            <th className="px-4 py-3">{t('rankedTable.colEv')}</th>
+            <th className="px-4 py-3">{t('rankedTable.colOdds')}</th>
           </tr>
         </thead>
         <tbody>

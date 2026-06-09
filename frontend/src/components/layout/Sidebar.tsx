@@ -18,6 +18,7 @@ import {
   Wallet,
   X,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { TELEGRAM_CHANNEL_URL } from '../../lib/seo'
 import { cn } from '../../lib/utils'
 import { isAdmin, isPremium } from '../../lib/auth'
@@ -31,29 +32,29 @@ type SidebarProps = {
 }
 
 const publicLinks = [
-  { to: '/1-day-1-pick', label: '1 Day 1 Pick', icon: Target, key: null },
-  { to: '/methodo', label: 'Methodo', icon: Sparkles, key: null },
-  { to: '/1-day-1-pick/archive', label: 'Archives', icon: CalendarDays, key: null },
-]
+  { to: '/1-day-1-pick', labelKey: 'nav.oneDayOnePick', icon: Target, key: null },
+  { to: '/methodo', labelKey: 'nav.methodo', icon: Sparkles, key: null },
+  { to: '/1-day-1-pick/archive', labelKey: 'nav.archives', icon: CalendarDays, key: null },
+] as const
 
 const accountLinks = [
-  { to: '/portfolio', label: 'Portefeuille', icon: Wallet, key: 'portfolio' as const },
-  { to: '/profile', label: 'Profil', icon: User, key: null },
-]
+  { to: '/portfolio', labelKey: 'nav.portfolio', icon: Wallet, key: 'portfolio' as const },
+  { to: '/profile', labelKey: 'nav.profile', icon: User, key: null },
+] as const
 
 const premiumLinks = [
-  { to: '/live', label: 'Live Tracker', icon: LayoutGrid, key: 'live' as const },
-  { to: '/paris', label: 'Paris du jour', icon: CalendarDays, key: 'paris' as const },
-  { to: '/top5', label: 'Top 5', icon: Trophy, key: 'top5' as const },
-  { to: '/top-probas', label: 'Top probas', icon: LineChart, key: 'topProbas' as const },
-]
+  { to: '/live', labelKey: 'nav.liveTracker', icon: LayoutGrid, key: 'live' as const },
+  { to: '/paris', labelKey: 'nav.parisDuJour', icon: CalendarDays, key: 'paris' as const },
+  { to: '/top5', labelKey: 'nav.top5', icon: Trophy, key: 'top5' as const },
+  { to: '/top-probas', labelKey: 'nav.topProbas', icon: LineChart, key: 'topProbas' as const },
+] as const
 
 const adminLinks = [
-  { to: '/backtest', label: 'Backtest', icon: BarChart3 },
-  { to: '/tracking', label: 'Tracking', icon: Activity },
-  { to: '/frequentation', label: 'Fréquentation', icon: Eye },
-  { to: '/settings', label: 'Paramètres', icon: Settings },
-]
+  { to: '/backtest', labelKey: 'nav.backtest', icon: BarChart3 },
+  { to: '/tracking', labelKey: 'nav.tracking', icon: Activity },
+  { to: '/frequentation', labelKey: 'nav.frequentation', icon: Eye },
+  { to: '/settings', labelKey: 'nav.settings', icon: Settings },
+] as const
 
 function NavItem({
   to,
@@ -98,6 +99,7 @@ function NavItem({
 
 export function Sidebar({ counts, mobileOpen = false, onNavigate }: SidebarProps) {
   const { user, logout } = useAuth()
+  const { t } = useTranslation()
   const showAdmin = isAdmin(user)
   const premium = isPremium(user)
 
@@ -115,7 +117,7 @@ export function Sidebar({ counts, mobileOpen = false, onNavigate }: SidebarProps
           type="button"
           onClick={onNavigate}
           className="rounded-lg p-2 text-muted transition hover:bg-panel hover:text-white md:hidden"
-          aria-label="Fermer le menu"
+          aria-label={t('header.closeMenu')}
         >
           <X className="h-5 w-5" />
         </button>
@@ -132,13 +134,13 @@ export function Sidebar({ counts, mobileOpen = false, onNavigate }: SidebarProps
           }
         >
           <LogIn className="h-4 w-4" />
-          Connexion
+          {t('nav.login')}
         </NavLink>
       )}
       <nav className="flex-1 space-y-1 overflow-y-auto">
-        <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Public</p>
+        <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">{t('nav.public')}</p>
         {publicLinks.map((l) => (
-          <NavItem key={l.to} to={l.to} label={l.label} icon={l.icon} onNavigate={onNavigate} />
+          <NavItem key={l.to} to={l.to} label={t(l.labelKey)} icon={l.icon} onNavigate={onNavigate} />
         ))}
         {TELEGRAM_CHANNEL_URL ? (
           <a
@@ -149,35 +151,35 @@ export function Sidebar({ counts, mobileOpen = false, onNavigate }: SidebarProps
             className="flex items-center gap-2.5 rounded-xl border-l-2 border-transparent px-3 py-2 text-sm text-muted transition hover:bg-panel hover:text-white"
           >
             <Send className="h-4 w-4 shrink-0" />
-            Canal Telegram
+            {t('nav.telegramChannel')}
           </a>
         ) : null}
         {user && (
           <>
-            <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Compte</p>
+            <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">{t('nav.account')}</p>
             {accountLinks.map((l) => (
-              <NavItem key={l.to} to={l.to} label={l.label} icon={l.icon} onNavigate={onNavigate} />
+              <NavItem key={l.to} to={l.to} label={t(l.labelKey)} icon={l.icon} onNavigate={onNavigate} />
             ))}
           </>
         )}
-        <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Premium</p>
+        <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">{t('nav.premium')}</p>
         {premiumLinks.map((l) => (
           <NavItem
             key={l.to}
             to={l.to}
-            label={l.label}
+            label={t(l.labelKey)}
             icon={l.icon}
             count={l.key ? counts[l.key] : undefined}
             locked={!!user && !premium}
             onNavigate={onNavigate}
           />
         ))}
-        <NavItem to="/pricing" label="Tarifs" icon={Sparkles} onNavigate={onNavigate} />
+        <NavItem to="/pricing" label={t('nav.pricing')} icon={Sparkles} onNavigate={onNavigate} />
         {showAdmin && (
           <>
-            <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Admin</p>
+            <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">{t('nav.admin')}</p>
             {adminLinks.map((l) => (
-              <NavItem key={l.to} to={l.to} label={l.label} icon={l.icon} onNavigate={onNavigate} />
+              <NavItem key={l.to} to={l.to} label={t(l.labelKey)} icon={l.icon} onNavigate={onNavigate} />
             ))}
           </>
         )}
@@ -193,7 +195,7 @@ export function Sidebar({ counts, mobileOpen = false, onNavigate }: SidebarProps
             className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs text-muted transition hover:bg-panel hover:text-white"
           >
             <LogOut className="h-3.5 w-3.5" />
-            Déconnexion
+            {t('nav.logout')}
           </button>
         </div>
       )}

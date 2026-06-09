@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 import { canonicalUrl, jsonLdForPath, OG_IMAGE, SITE_NAME, seoForPath } from '../lib/seo'
 
@@ -42,11 +43,14 @@ function upsertJsonLd(blocks: object[]) {
 /** Met à jour title, canonical, meta, OG, Twitter et JSON-LD à chaque route. */
 export function usePageSeo() {
   const { pathname } = useLocation()
+  const { i18n } = useTranslation()
+  const lang = i18n.language
 
   useEffect(() => {
-    const seo = seoForPath(pathname)
+    const seo = seoForPath(pathname, lang)
     const url = canonicalUrl(pathname)
     const ogImage = seo.ogImage ?? OG_IMAGE
+    const ogLocale = lang.startsWith('en') ? 'en_GB' : 'fr_FR'
 
     document.title = seo.title
     upsertMeta('name', 'description', seo.description)
@@ -59,13 +63,13 @@ export function usePageSeo() {
     upsertMeta('property', 'og:type', 'website')
     upsertMeta('property', 'og:site_name', SITE_NAME)
     upsertMeta('property', 'og:image', ogImage)
-    upsertMeta('property', 'og:locale', 'fr_FR')
+    upsertMeta('property', 'og:locale', ogLocale)
 
     upsertMeta('name', 'twitter:card', 'summary_large_image')
     upsertMeta('name', 'twitter:title', seo.title)
     upsertMeta('name', 'twitter:description', seo.description)
     upsertMeta('name', 'twitter:image', ogImage)
 
-    upsertJsonLd(jsonLdForPath(pathname))
-  }, [pathname])
+    upsertJsonLd(jsonLdForPath(pathname, lang))
+  }, [pathname, lang])
 }
