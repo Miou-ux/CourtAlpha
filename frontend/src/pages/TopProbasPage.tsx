@@ -4,16 +4,19 @@ import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer,
 import { api } from '../api/client'
 import { EmptyState } from '../components/EmptyState'
 import { PageHero } from '../components/PageHero'
+import { useAuth } from '../context/AuthContext'
 
 import { BRAND, CHART_TOOLTIP_STYLE } from '../lib/brand'
 
 const TOUR_COLORS: Record<string, string> = { ATP: BRAND.atp, WTA: BRAND.wta, '—': BRAND.muted }
 
 export function TopProbasPage() {
+  const { token } = useAuth()
   const [includeChallengers, setIncludeChallengers] = useState(false)
   const q = useQuery({
-    queryKey: ['top-probas', includeChallengers],
-    queryFn: () => api.picksTopProbas({ include_challengers: includeChallengers }),
+    queryKey: ['top-probas', includeChallengers, token],
+    queryFn: () => api.picksTopProbas({ include_challengers: includeChallengers }, token),
+    enabled: !!token,
   })
 
   const rows = q.data?.rows ?? []
@@ -48,6 +51,11 @@ export function TopProbasPage() {
 
       {q.isLoading ? (
         <p className="text-sm text-muted">Chargement…</p>
+      ) : q.isError ? (
+        <EmptyState
+          title="Impossible de charger les probas"
+          hint={q.error instanceof Error ? q.error.message : 'Reconnecte-toi et réessaie.'}
+        />
       ) : rows.length === 0 ? (
         <EmptyState title="Aucun match dans le périmètre" hint="Élargis le scope (challengers) ou vérifie le snapshot live." />
       ) : (

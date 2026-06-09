@@ -8,6 +8,7 @@ Type=simple
 User=ubuntu
 Group=ubuntu
 WorkingDirectory=/opt/courtalpha
+EnvironmentFile=-/opt/bettinghud/.env
 EnvironmentFile=-/opt/courtalpha/.env
 Environment=BETTINGHUD_HEADLESS=1
 ExecStart=/opt/bettinghud/venv/bin/python -m uvicorn api.main:app --host 127.0.0.1 --port 8000

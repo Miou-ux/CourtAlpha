@@ -12,7 +12,14 @@ from api.auth_tokens import auth_required
 from api.bridge import bootstrap_bettinghud
 from api.routes.auth import current_user
 from api.serialize import to_jsonable
-from api.user_scope import bankroll_for_user, require_authenticated_user, telegram_uid
+from api.user_scope import (
+    bankroll_for_user,
+    bet_belongs_to_user,
+    portfolio_scope,
+    require_authenticated_user,
+    telegram_uid,
+    web_username,
+)
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
@@ -28,9 +35,10 @@ def _bankroll_snapshot(conn: sqlite3.Connection, user: dict | None) -> dict:
     raise HTTPException(status_code=401, detail="Authentification requise")
 
 
-def _fetch_bets_rows(conn: sqlite3.Connection, telegram_uid: str | None) -> list[dict]:
+def _fetch_bets_rows(conn: sqlite3.Connection, user: dict | None) -> list[dict]:
     conn.row_factory = sqlite3.Row
-    if telegram_uid:
+    scope, key = portfolio_scope(user)
+    if scope == "telegram":
         rows = conn.execute(
             """
             SELECT *
@@ -38,7 +46,17 @@ def _fetch_bets_rows(conn: sqlite3.Connection, telegram_uid: str | None) -> list
             WHERE telegram_user_id = ?
             ORDER BY id ASC
             """,
-            (telegram_uid,),
+            (key,),
+        ).fetchall()
+    elif scope == "web":
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM user_bets
+            WHERE LOWER(COALESCE(web_username, '')) = ?
+            ORDER BY id ASC
+            """,
+            (key,),
         ).fetchall()
     else:
         rows = []
@@ -238,16 +256,18 @@ def portfolio_summary(user: dict | None = Depends(current_user)) -> dict:
     from scripts.bets_db import DB_PATH_DEFAULT, ensure_user_bets_schema
 
     tg = _telegram_uid(user)
+    scope, _ = portfolio_scope(user)
     conn = sqlite3.connect(DB_PATH_DEFAULT)
     try:
         ensure_user_bets_schema(conn)
         bankroll = _bankroll_snapshot(conn, user)
-        bets = _fetch_bets_rows(conn, tg)
+        bets = _fetch_bets_rows(conn, user)
         analytics = _compute_analytics(bets)
         return to_jsonable(
             {
-                "scope": "telegram" if tg else "unlinked",
+                "scope": scope,
                 "telegram_user_id": tg,
+                "web_username": web_username(user),
                 "bankroll": bankroll,
                 "n_bets_open": analytics["n_open"],
                 "n_bets_settled": analytics["n_won"] + analytics["n_lost"] + analytics["n_void"],
@@ -272,11 +292,12 @@ def portfolio_bets(
     from scripts.bets_db import DB_PATH_DEFAULT, ensure_user_bets_schema
 
     tg = _telegram_uid(user)
+    scope, key = portfolio_scope(user)
     conn = sqlite3.connect(DB_PATH_DEFAULT)
     conn.row_factory = sqlite3.Row
     try:
         ensure_user_bets_schema(conn)
-        if tg:
+        if scope == "telegram":
             rows = conn.execute(
                 """
                 SELECT id, date, match_name, bet_on, odds, stake, status, profit,
@@ -286,7 +307,19 @@ def portfolio_bets(
                 WHERE telegram_user_id = ?
                 ORDER BY id DESC
                 """,
-                (tg,),
+                (key,),
+            ).fetchall()
+        elif scope == "web":
+            rows = conn.execute(
+                """
+                SELECT id, date, match_name, bet_on, odds, stake, status, profit,
+                       tournament, tour, match_date, ev_at_bet, p_model, tracker_source,
+                       closing_odd, clv_score, segment_key, notes
+                FROM user_bets
+                WHERE LOWER(COALESCE(web_username, '')) = ?
+                ORDER BY id DESC
+                """,
+                (key,),
             ).fetchall()
         else:
             rows = []
@@ -329,12 +362,9 @@ def portfolio_bankroll_adjust(
 ) -> dict:
     """Ajoute ou retire des fonds via l'ajustement manuel Kelly (dépôt/retrait)."""
     user = require_authenticated_user(user)
-    tg = _telegram_uid(user)
-    if not tg:
-        raise HTTPException(
-            status_code=400,
-            detail="Liez votre compte Telegram dans Profil pour gérer la bankroll.",
-        )
+    scope, key = portfolio_scope(user)
+    if scope == "unlinked":
+        raise HTTPException(status_code=401, detail="Authentification requise")
 
     amount = float(body.amount_eur)
     if abs(amount) < 1e-9:
@@ -346,15 +376,28 @@ def portfolio_bankroll_adjust(
     from scripts.bets_db import (
         DB_PATH_DEFAULT,
         compute_telegram_user_bankroll_eur,
+        compute_web_user_bankroll_eur,
         ensure_user_bets_schema,
         get_telegram_user_manual_adjust_eur,
+        get_web_user_manual_adjust_eur,
         set_telegram_user_manual_adjust_eur,
+        set_web_user_manual_adjust_eur,
     )
 
     conn = sqlite3.connect(DB_PATH_DEFAULT)
     try:
         ensure_user_bets_schema(conn)
-        before = compute_telegram_user_bankroll_eur(conn, tg)
+        if scope == "telegram":
+            before = compute_telegram_user_bankroll_eur(conn, key)
+            get_adj = get_telegram_user_manual_adjust_eur
+            set_adj = set_telegram_user_manual_adjust_eur
+            after = compute_telegram_user_bankroll_eur
+        else:
+            before = compute_web_user_bankroll_eur(conn, key)
+            get_adj = get_web_user_manual_adjust_eur
+            set_adj = set_web_user_manual_adjust_eur
+            after = compute_web_user_bankroll_eur
+
         available_before = float(before["available_eur"])
         if amount < 0 and available_before + amount < -1e-6:
             raise HTTPException(
@@ -362,16 +405,17 @@ def portfolio_bankroll_adjust(
                 detail=f"Retrait impossible : BR disponible {available_before:.2f} €.",
             )
 
-        prev_adj = get_telegram_user_manual_adjust_eur(conn, tg)
+        prev_adj = get_adj(conn, key)
         new_adj = float(prev_adj) + amount
-        set_telegram_user_manual_adjust_eur(conn, tg, new_adj)
+        set_adj(conn, key, new_adj)
         conn.commit()
-        bankroll = compute_telegram_user_bankroll_eur(conn, tg)
-        bankroll["bankroll_mode"] = "telegram"
+        bankroll = after(conn, key)
+        bankroll["bankroll_mode"] = scope
         return to_jsonable(
             {
                 "ok": True,
                 "amount_eur": amount,
+                "scope": scope,
                 "manual_adjust_eur": new_adj,
                 "manual_adjust_eur_before": float(prev_adj),
                 "bankroll": bankroll,
@@ -392,7 +436,6 @@ def settle_bet_manual(
     bootstrap_bettinghud()
     from scripts.bets_db import DB_PATH_DEFAULT, ensure_user_bets_schema, settle_bet
 
-    tg = _telegram_uid(user)
     conn = sqlite3.connect(DB_PATH_DEFAULT)
     conn.row_factory = sqlite3.Row
     try:
@@ -401,10 +444,8 @@ def settle_bet_manual(
         if not row:
             raise HTTPException(status_code=404, detail="Pari introuvable")
         bet = dict(row)
-        if tg:
-            bet_tg = str(bet.get("telegram_user_id") or "").strip()
-            if bet_tg and bet_tg != tg:
-                raise HTTPException(status_code=403, detail="Pari d'un autre utilisateur")
+        if not bet_belongs_to_user(bet, user):
+            raise HTTPException(status_code=403, detail="Pari d'un autre utilisateur")
         if str(bet.get("status") or "").strip() != "En cours":
             raise HTTPException(status_code=400, detail="Pari déjà réglé")
 

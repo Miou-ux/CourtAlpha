@@ -36,6 +36,10 @@ export type PickRow = {
   rank?: number
   bet_on?: string
   opponent?: string
+  fav_player?: string
+  underdog_player?: string
+  player1?: string
+  player2?: string
   match_name?: string
   tournament?: string
   tour?: string
@@ -48,6 +52,8 @@ export type PickRow = {
   true_odd?: number
   match_time?: string
   surface?: string
+  match_date?: string
+  calendar_date?: string
   theoretical_stake_frac?: number
   is_value?: boolean
   segment_brier?: number
@@ -55,6 +61,7 @@ export type PickRow = {
   priority_score?: number
   p_implicit_pct?: number
   side?: number
+  existing_stake_eur?: number
 }
 
 export type WhyValueExplain = {
@@ -96,8 +103,9 @@ export type PicksResponse = {
 }
 
 export type PortfolioSummary = {
-  scope: 'global' | 'telegram'
+  scope: 'global' | 'telegram' | 'web' | 'unlinked'
   telegram_user_id?: string | null
+  web_username?: string | null
   bankroll: {
     available_eur: number
     equity_eur: number
@@ -234,10 +242,44 @@ export type AuthUser = {
   username: string
   display_name: string
   role: string
+  tier?: 'visitor' | 'free' | 'premium' | 'admin'
+  premium_active?: boolean
+  premium_until?: string | null
   telegram_user_id?: string
   telegram_username?: string
   avatar_url?: string
   email?: string
+}
+
+export type BillingPlan = {
+  id: string
+  label: string
+  duration_days: number
+  price_wei: string
+  chain_id: number
+}
+
+export type BillingOrder = {
+  id: string
+  username: string
+  plan_id: string
+  payment_ref: string
+  price_wei: string
+  chain_id: number
+  status: string
+  payer_address?: string | null
+  tx_hash?: string | null
+  created_at: string
+  expires_at: string
+  paid_at?: string | null
+  deposit_address?: string | null
+  address_index?: number | null
+  contract_address?: string | null
+  payments_enabled?: boolean
+  payment_mode?: 'deposit' | 'contract' | null
+  deposit_enabled?: boolean
+  plan_label?: string
+  duration_days?: number
 }
 
 export type ProfileUpdatePayload = {
@@ -280,6 +322,67 @@ export type TopProbasResponse = {
     ev_fav_pct: number | null
     gap_pp: number | null
   }>
+}
+
+export type OneDayOnePickRow = PickRow & {
+  day_rank: number
+  status?: string | null
+  settled?: boolean
+  won?: boolean
+  lost?: boolean
+  open?: boolean
+  is_today?: boolean
+  source?: 'db' | 'live' | null
+  score_final?: string | null
+  score_display?: string | null
+  theoretical_stake_pct?: number
+  theoretical_profit_frac?: number | null
+  capture_source?: string | null
+}
+
+export type OneDayOnePickResponse = {
+  selection: {
+    mode: string
+    description: string
+    ev_min_pct: number
+    ev_max_pct: number
+    exclude_today: boolean
+    bankroll_start_eur: number
+  }
+  period: {
+    start_date: string | null
+    end_date: string | null
+    n_days: number
+  }
+  summary: {
+    n_picks: number
+    n_settled: number
+    n_open: number
+    n_won: number
+    n_lost: number
+    hit_pct: number
+    bankroll_start_eur: number
+    bankroll_final_eur: number
+    net_profit_eur: number
+    growth_pct: number
+    total_staked_eur: number
+    roi_on_staked_pct: number
+    max_drawdown_pct: number
+  }
+  today_date: string
+  pick_today: OneDayOnePickRow | null
+  picks: OneDayOnePickRow[]
+  curve: Array<{
+    date: string
+    bankroll: number
+    daily_profit_eur: number
+    daily_stake_eur: number
+    n_picks_cum: number
+    pnl_cum_eur: number
+    drawdown_pct: number
+    settled: boolean
+  }>
+  generated_at: string
 }
 
 export type BacktestSimulateRequest = {
@@ -333,20 +436,89 @@ export type TrackingResponse = {
   drift?: { level: string; message: string }
 }
 
+export type AnalyticsTrafficResponse = {
+  period_days: number
+  timezone: string
+  data_since: string | null
+  summary: {
+    views_today: number
+    views_yesterday: number
+    unique_today: number
+    views_7d: number
+    unique_7d: number
+    views_period: number
+    unique_period: number
+    authenticated_share_pct: number
+  }
+  daily: Array<{
+    date: string
+    views: number
+    uniques: number
+    authenticated_views: number
+  }>
+  top_pages: Array<{
+    path: string
+    label: string
+    views: number
+    uniques: number
+    share_pct: number
+  }>
+  hourly_today: Array<{ hour: number; views: number }>
+  top_sources: Array<{
+    source: string
+    label: string
+    views: number
+    uniques: number
+    share_pct: number
+  }>
+  top_countries: Array<{
+    country_code: string | null
+    label: string
+    views: number
+    uniques: number
+    share_pct: number
+  }>
+  top_referrers: Array<{ host: string; views: number; share_pct: number }>
+  generated_at: string
+}
+
+export type PipelineStatus = {
+  id: string
+  label: string
+  last_run_at: string | null
+  last_run_detail: string | null
+  next_run_at: string | null
+  schedule_label: string
+  schedule_driver: string
+  status: string
+  running: boolean
+  can_force: boolean
+}
+
+export type SystemJobRunResponse = {
+  ok: boolean
+  job_id: string
+  status: string
+  pid?: number
+  log_path?: string
+  error?: string
+}
+
 export type SystemStatusResponse = {
   checked_at: string
   bettinghud_root: string
   env: string
-  snapshot: { n_matches: number; age_min: number | null; level: string; path: string }
+  snapshot: { n_matches: number; age_min: number | null; level: string; path: string; built_at?: number | null }
   prematch_csv: { file: string | null; age_min: number | null; level: string }
   portfolio_daemon: { active: boolean; heartbeat_age_min: number | null; level: string }
   data_freshness: Record<string, unknown>
+  pipelines: PipelineStatus[]
 }
 
 export const api = {
   health: () => getJson<{ status: string; bettinghud_root: string }>('/api/health'),
-  liveMeta: () => getJson<LiveMeta>('/api/live/meta'),
-  liveMatches: () => getJson<LiveMatchesResponse>('/api/live/matches'),
+  liveMeta: (token?: string | null) => getJson<LiveMeta>('/api/live/meta', token),
+  liveMatches: (token?: string | null) => getJson<LiveMatchesResponse>('/api/live/matches', token),
   liveValueBets: (opts?: { ev_min_pct?: number; mode?: 'value' | 'all' }, token?: string | null) => {
     const q = new URLSearchParams()
     if (opts?.ev_min_pct != null) q.set('ev_min_pct', String(opts.ev_min_pct))
@@ -354,15 +526,32 @@ export const api = {
     const qs = q.toString()
     return getJson<LiveValueBetsResponse>(`/api/live/value-bets${qs ? `?${qs}` : ''}`, token)
   },
-  picksJour: () => getJson<PicksResponse>('/api/picks/jour'),
-  picksTop5: () => getJson<PicksResponse>('/api/picks/top5'),
-  picksTopProbas: (opts?: { limit?: number; include_challengers?: boolean; ev_band?: boolean }) => {
+  picksJour: (token?: string | null) => getJson<PicksResponse>('/api/picks/jour', token),
+  picksTop5: (token?: string | null) => getJson<PicksResponse>('/api/picks/top5', token),
+  picksOneDayOnePick: (opts?: {
+    bankroll_start?: number
+    ev_min_pct?: number
+    ev_max_pct?: number
+    exclude_today?: boolean
+  }) => {
+    const q = new URLSearchParams()
+    if (opts?.bankroll_start != null) q.set('bankroll_start', String(opts.bankroll_start))
+    if (opts?.ev_min_pct != null) q.set('ev_min_pct', String(opts.ev_min_pct))
+    if (opts?.ev_max_pct != null) q.set('ev_max_pct', String(opts.ev_max_pct))
+    if (opts?.exclude_today === true) q.set('exclude_today', 'true')
+    const qs = q.toString()
+    return getJson<OneDayOnePickResponse>(`/api/picks/one-day-one-pick${qs ? `?${qs}` : ''}`)
+  },
+  picksTopProbas: (
+    opts?: { limit?: number; include_challengers?: boolean; ev_band?: boolean },
+    token?: string | null,
+  ) => {
     const q = new URLSearchParams()
     if (opts?.limit) q.set('limit', String(opts.limit))
     if (opts?.include_challengers) q.set('include_challengers', 'true')
     if (opts?.ev_band === false) q.set('ev_band', 'false')
     const qs = q.toString()
-    return getJson<TopProbasResponse>(`/api/picks/top-probas${qs ? `?${qs}` : ''}`)
+    return getJson<TopProbasResponse>(`/api/picks/top-probas${qs ? `?${qs}` : ''}`, token)
   },
   portfolioSummary: (token?: string | null) => getJson<PortfolioSummary>('/api/portfolio/summary', token),
   portfolioBets: (opts?: PortfolioBetsQuery, token?: string | null) => {
@@ -401,7 +590,26 @@ export const api = {
   backtestSimulate: (body: BacktestSimulateRequest, token: string | null) =>
     postJson<BacktestSimulateResponse>('/api/backtest/simulate', body, token),
   tracking: (token: string | null) => getJson<TrackingResponse>('/api/tracking', token),
+  analyticsPageView: (
+    body: {
+      path: string
+      referrer?: string
+      utm_source?: string
+      utm_medium?: string
+      utm_campaign?: string
+    },
+    token?: string | null,
+  ) =>
+    postJson<{ ok: boolean; recorded: boolean; reason?: string }>('/api/analytics/pageview', body, token),
+  analyticsTraffic: (opts?: { days?: number }, token?: string | null) => {
+    const q = new URLSearchParams()
+    if (opts?.days != null) q.set('days', String(opts.days))
+    const qs = q.toString()
+    return getJson<AnalyticsTrafficResponse>(`/api/analytics/traffic${qs ? `?${qs}` : ''}`, token)
+  },
   systemStatus: (token: string | null) => getJson<SystemStatusResponse>('/api/system/status', token),
+  systemRunJob: (token: string | null, jobId: string) =>
+    postJson<SystemJobRunResponse>(`/api/system/jobs/${jobId}/run`, {}, token),
   authLogin: (username: string, password: string) =>
     postJson<{ ok: boolean; token: string; user: AuthUser }>('/api/auth/login', { username, password }),
   authRegister: (body: { username: string; email: string; password: string; display_name?: string }) =>
@@ -418,8 +626,37 @@ export const api = {
       authenticated: boolean
       auth_required: boolean
       registration_open?: boolean
+      billing_enabled?: boolean
+      tier?: string
+      premium_active?: boolean
+      premium_until?: string | null
       user?: AuthUser
     }>('/api/auth/me', token),
+  billingConfig: () =>
+    getJson<{
+      ok: boolean
+      enabled: boolean
+      payments_enabled: boolean
+      payment_mode?: 'deposit' | 'contract' | null
+      deposit_enabled?: boolean
+      contract_address: string | null
+      chain_id: number
+    }>('/api/billing/config'),
+  billingPlans: () =>
+    getJson<{
+      ok: boolean
+      enabled: boolean
+      payments_enabled: boolean
+      payment_mode?: 'deposit' | 'contract' | null
+      deposit_enabled?: boolean
+      contract_address: string | null
+      chain_id: number
+      plans: BillingPlan[]
+    }>('/api/billing/plans'),
+  billingCreateOrder: (token: string, planId: string) =>
+    postJson<{ ok: boolean; order: BillingOrder }>('/api/billing/orders', { plan_id: planId }, token),
+  billingGetOrder: (token: string, orderId: string) =>
+    getJson<{ ok: boolean; order: BillingOrder }>(`/api/billing/orders/${orderId}`, token),
   authLogout: (token: string) => postJson<{ ok: boolean }>('/api/auth/logout', {}, token),
   authUpdateProfile: (token: string, body: ProfileUpdatePayload) =>
     patchJson<{ ok: boolean; user: AuthUser }>('/api/auth/profile', body, token),

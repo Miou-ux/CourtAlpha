@@ -12,9 +12,16 @@ import { ParisPage } from './pages/ParisPage'
 import { PortfolioPage } from './pages/PortfolioPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { SettingsPage } from './pages/SettingsPage'
+import { FrequentationPage } from './pages/FrequentationPage'
+import { OneDayOnePickPage } from './pages/OneDayOnePickPage'
+import { usePageSeo } from './hooks/usePageSeo'
+import { usePageViewAnalytics } from './hooks/usePageViewAnalytics'
 import { Top5Page } from './pages/Top5Page'
 import { TopProbasPage } from './pages/TopProbasPage'
 import { TrackingPage } from './pages/TrackingPage'
+import { PricingPage } from './pages/PricingPage'
+import { MethodoPage } from './pages/MethodoPage'
+import { OneDayOnePickArchivePage } from './pages/OneDayOnePickArchivePage'
 
 function ResetTokenRedirect() {
   const location = useLocation()
@@ -29,11 +36,19 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<Navigate to="/live" replace />} />
+      <Route path="/" element={<Navigate to="/1-day-1-pick" replace />} />
+      <Route
+        path="/pricing"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <PricingPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/live"
         element={
-          <ProtectedRoute requireAuth={false}>
+          <ProtectedRoute premiumOnly>
             <LivePage scanned={data.meta?.n_scanned ?? 0} bootstrapLoading={data.loading} />
           </ProtectedRoute>
         }
@@ -41,7 +56,7 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
       <Route
         path="/paris"
         element={
-          <ProtectedRoute requireAuth={false}>
+          <ProtectedRoute premiumOnly>
             <ParisPage
               picks={data.picks}
               scanned={data.meta?.n_scanned ?? 0}
@@ -54,15 +69,55 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
       <Route
         path="/top5"
         element={
-          <ProtectedRoute requireAuth={false}>
-            <Top5Page picks={data.top5} pool={data.meta?.n_matches_today ?? 0} loading={data.loading} />
+          <ProtectedRoute premiumOnly>
+            <Top5Page
+              picks={data.top5}
+              pool={data.meta?.n_matches_today ?? 0}
+              loading={data.loading}
+              onBetSuccess={data.refetchAll}
+            />
           </ProtectedRoute>
         }
       />
       <Route
+        path="/1-day-1-pick"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <OneDayOnePickPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/1-day-1-pick/archive"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <OneDayOnePickArchivePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/1-day-1-pick/archive/:yearMonth"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <OneDayOnePickArchivePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/methodo"
+        element={
+          <ProtectedRoute requireAuth={false}>
+            <MethodoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/methodologie" element={<Navigate to="/methodo" replace />} />
+      <Route path="/track-record" element={<Navigate to="/1-day-1-pick" replace />} />
+      <Route path="/top1-historique" element={<Navigate to="/1-day-1-pick" replace />} />
+      <Route
         path="/top-probas"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute premiumOnly>
             <TopProbasPage />
           </ProtectedRoute>
         }
@@ -97,6 +152,14 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
         }
       />
       <Route
+        path="/frequentation"
+        element={
+          <ProtectedRoute adminOnly>
+            <FrequentationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
           <ProtectedRoute adminOnly>
@@ -119,6 +182,8 @@ function AppRoutes({ data }: { data: ReturnType<typeof useDashboardData> }) {
 function App() {
   const location = useLocation()
   const data = useDashboardData()
+  usePageSeo()
+  usePageViewAnalytics()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const isLogin = location.pathname === '/login'
 

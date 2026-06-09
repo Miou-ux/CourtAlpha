@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+Allow: /1-day-1-pick
+Allow: /1-day-1-pick/archive
+Allow: /pricing
+Allow: /methodo
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+Disallow: /live
+Disallow: /paris
+Disallow: /top5
+Disallow: /login
+Disallow: /top-probas
+Disallow: /portfolio
+Disallow: /profile
+Disallow: /backtest
+Disallow: /tracking
+Disallow: /frequentation
+Disallow: /settings
+Disallow: /api/
+
+Sitemap: https://courtalpha.tech/sitemap.xml

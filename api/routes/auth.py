@@ -69,6 +69,16 @@ def require_admin(user: dict = Depends(require_user)) -> dict:
     return user
 
 
+def require_premium(user: dict = Depends(require_user)) -> dict:
+    bootstrap_bettinghud()
+    from scripts.web_auth import is_admin
+    from scripts.web_billing import is_premium
+
+    if is_admin(user) or is_premium(str(user.get("username") or ""), user=user):
+        return user
+    raise HTTPException(status_code=402, detail="Abonnement premium requis")
+
+
 @router.post("/login")
 def auth_login(body: LoginRequest) -> dict:
     bootstrap_bettinghud()
@@ -87,10 +97,16 @@ def auth_me(user: dict | None = Depends(current_user)) -> dict:
     from scripts.web_auth import registration_enabled
 
     if user:
+        from scripts.web_billing import billing_enabled, user_tier
+
         return {
             "ok": True,
             "authenticated": True,
             "user": user,
+            "tier": user_tier(user),
+            "premium_active": bool(user.get("premium_active")),
+            "premium_until": user.get("premium_until"),
+            "billing_enabled": billing_enabled(),
             "auth_required": auth_required(),
             "registration_open": registration_enabled(),
         }

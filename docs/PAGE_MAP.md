@@ -15,9 +15,15 @@ Légende statut : ⬜ à faire · 🟡 en cours · ✅ fait
 | 5 | 📊 Backtest Kelly (CSV) | `/backtest` | P2 | ✅ simulate + courbe BR |
 | 6 | 📡 Tracking modèle (réel) | `/tracking` | P2 | ✅ KPI + calibration |
 | 7 | 🧪 Diagnostics Modèle | `/diagnostics` | P3 | ⬜ |
-| 8 | ⚙️ Paramètres | `/settings` | P2 | ✅ statut système + compte |
-| — | Auth web | `/login` | P1 | ✅ login optionnel PREPROD |
-| — | (accueil) | `/` | P2 | 🟡 redirection vers `/live` |
+| 8 | 👁 Fréquentation | `/frequentation` | P2 | ✅ admin — stats trafic web |
+| 9 | ⚙️ Paramètres | `/settings` | P2 | ✅ statut système + compte |
+| — | **1 Day 1 Pick** | `/1-day-1-pick` | P1 | ✅ public |
+| — | **Pricing** | `/pricing` | P1 | ✅ checkout ETH |
+| — | **Méthodo** | `/methodo` | P1 | ✅ SEO public |
+| — | Auth web | `/login` | P1 | ✅ |
+| — | (accueil) | `/` | P2 | ✅ → `/1-day-1-pick` |
+
+**Gating premium (PROD)** : `/live`, `/paris`, `/top5`, `/top-probas` → compte premium. Public : `/1-day-1-pick`, `/pricing`, `/methodo`.
 
 Sprints livrés : S1.5 design · S2 filtres Live · S3 Portfolio · S4 POST paris · **S5 Top probas** · **S6 Backtest + Tracking** · **S7 Auth + Settings**.
 
@@ -28,7 +34,7 @@ Sprints livrés : S1.5 design · S2 filtres Live · S3 Portfolio · S4 POST pari
 **Streamlit** : `_render` section `tab_live` — filtres, cartes value bet, paris, bankroll LT.
 
 **React SoDeglingo-like** :
-- `FilterBar` sticky (circuit, jour, challenger, EV, recherche joueur)
+- `FilterBar` sticky (circuit, recherche joueur, **proba min**, **cote min/max**)
 - Grille `MatchCard` avec badges ATP/WTA, segment Brier, panneau EV 3 colonnes
 - Actions : ajuster cote, Kelly, **Parier** (modal)
 - Bandeau statut snapshot (âge, rebuild en cours)
@@ -56,6 +62,21 @@ Sprints livrés : S1.5 design · S2 filtres Live · S3 Portfolio · S4 POST pari
 **API** :
 - `GET /api/picks/top5` ✅
 - `POST /api/bets`
+
+---
+
+## 1 Day 1 Pick (`/1-day-1-pick`) — public
+
+**React** (pas d’équivalent Streamlit dédié) :
+- Hero « 1 Day 1 Pick » — replay historique depuis `daily_top_proba_picks`
+- KPI : hit rate, P/L net, croissance, ROI misé, max drawdown
+- Courbe bankroll cumulative (Recharts)
+- Tableau picks avec `PickMatchupDisplay`, statut match, score final
+
+**API** :
+- `GET /api/picks/one-day-one-pick` ✅ (public, sans auth)
+
+**Accès** : visiteur anonyme (sidebar + mobile bottom nav).
 
 ---
 
@@ -183,5 +204,29 @@ Bloc utilisateur en bas de la **Sidebar** (avatar + lien profil).
 | **S5** | Top probas + graphiques |
 | **S6** | Backtest + Tracking |
 | **S7** | Diagnostics + Settings + déploiement |
+
+---
+
+## SEO (pack 1)
+
+Fichiers statiques : `frontend/public/sitemap.xml`, `frontend/public/robots.txt` (copiés dans `dist/` au build Vite).
+
+Config React : `frontend/src/lib/seo.ts` + hook `usePageSeo` (title, description, robots, Open Graph par route).
+
+| Route | Sitemap | robots | Accès |
+|-------|---------|--------|-------|
+| `/live` | ✅ | index,follow | public |
+| `/paris` | ✅ | index,follow | public |
+| `/top5` | ✅ | index,follow | public |
+| `/1-day-1-pick` | ✅ | index,follow | public |
+| `/login` | — | noindex,nofollow | auth |
+| `/top-probas` | — | noindex,nofollow | membre |
+| `/portfolio` | — | noindex,nofollow | membre |
+| `/profile` | — | noindex,nofollow | membre |
+| `/backtest` | — | noindex,nofollow | admin |
+| `/tracking` | — | noindex,nofollow | admin |
+| `/frequentation` | — | noindex,nofollow | admin |
+| `/settings` | — | noindex,nofollow | admin |
+| `/`, `/track-record`, `/top1-historique` | — | noindex,nofollow | redirections |
 
 Streamlit reste la référence fonctionnelle jusqu’à fin S4 minimum.

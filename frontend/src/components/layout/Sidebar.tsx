@@ -1,11 +1,28 @@
 import { NavLink } from 'react-router-dom'
-import { Activity, BarChart3, CalendarDays, LayoutGrid, LineChart, LogIn, LogOut, Settings, Trophy, User, Wallet, X } from 'lucide-react'
+import {
+  Activity,
+  BarChart3,
+  CalendarDays,
+  Eye,
+  LayoutGrid,
+  LineChart,
+  Lock,
+  LogIn,
+  LogOut,
+  Settings,
+  Send,
+  Sparkles,
+  Target,
+  Trophy,
+  User,
+  Wallet,
+  X,
+} from 'lucide-react'
+import { TELEGRAM_CHANNEL_URL } from '../../lib/seo'
 import { cn } from '../../lib/utils'
-import { adminRoleLabel, isAdmin } from '../../lib/auth'
+import { isAdmin, isPremium } from '../../lib/auth'
 import { useAuth } from '../../context/AuthContext'
-import { Badge } from '../Badge'
 import { CourtAlphaLogo } from '../CourtAlphaLogo'
-import { UserAvatar } from '../UserAvatar'
 
 type SidebarProps = {
   counts: { live: number; paris: number; top5: number; topProbas?: number }
@@ -14,19 +31,27 @@ type SidebarProps = {
 }
 
 const publicLinks = [
+  { to: '/1-day-1-pick', label: '1 Day 1 Pick', icon: Target, key: null },
+  { to: '/methodo', label: 'Methodo', icon: Sparkles, key: null },
+  { to: '/1-day-1-pick/archive', label: 'Archives', icon: CalendarDays, key: null },
+]
+
+const accountLinks = [
+  { to: '/portfolio', label: 'Portefeuille', icon: Wallet, key: 'portfolio' as const },
+  { to: '/profile', label: 'Profil', icon: User, key: null },
+]
+
+const premiumLinks = [
   { to: '/live', label: 'Live Tracker', icon: LayoutGrid, key: 'live' as const },
   { to: '/paris', label: 'Paris du jour', icon: CalendarDays, key: 'paris' as const },
   { to: '/top5', label: 'Top 5', icon: Trophy, key: 'top5' as const },
-]
-
-const memberLinks = [
   { to: '/top-probas', label: 'Top probas', icon: LineChart, key: 'topProbas' as const },
-  { to: '/portfolio', label: 'Portefeuille', icon: Wallet, key: 'portfolio' as const },
 ]
 
 const adminLinks = [
   { to: '/backtest', label: 'Backtest', icon: BarChart3 },
   { to: '/tracking', label: 'Tracking', icon: Activity },
+  { to: '/frequentation', label: 'Fréquentation', icon: Eye },
   { to: '/settings', label: 'Paramètres', icon: Settings },
 ]
 
@@ -35,12 +60,14 @@ function NavItem({
   label,
   icon: Icon,
   count,
+  locked,
   onNavigate,
 }: {
   to: string
   label: string
   icon: typeof LayoutGrid
   count?: number | null
+  locked?: boolean
   onNavigate?: () => void
 }) {
   return (
@@ -53,12 +80,14 @@ function NavItem({
           isActive
             ? 'border-l-2 border-accent bg-accent/10 pl-[10px] font-medium text-accent'
             : 'border-l-2 border-transparent text-muted hover:bg-panel hover:text-white',
+          locked && 'opacity-80',
         )
       }
     >
       <span className="flex items-center gap-2.5">
         <Icon className="h-4 w-4 shrink-0" />
         {label}
+        {locked && <Lock className="h-3 w-3 shrink-0 opacity-60" />}
       </span>
       {count != null && count > 0 && (
         <span className="quant rounded-md bg-accent/15 px-1.5 py-0.5 text-xs text-accent">{count}</span>
@@ -70,6 +99,7 @@ function NavItem({
 export function Sidebar({ counts, mobileOpen = false, onNavigate }: SidebarProps) {
   const { user, logout } = useAuth()
   const showAdmin = isAdmin(user)
+  const premium = isPremium(user)
 
   return (
     <aside
@@ -106,27 +136,43 @@ export function Sidebar({ counts, mobileOpen = false, onNavigate }: SidebarProps
         </NavLink>
       )}
       <nav className="flex-1 space-y-1 overflow-y-auto">
+        <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Public</p>
         {publicLinks.map((l) => (
+          <NavItem key={l.to} to={l.to} label={l.label} icon={l.icon} onNavigate={onNavigate} />
+        ))}
+        {TELEGRAM_CHANNEL_URL ? (
+          <a
+            href={TELEGRAM_CHANNEL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onNavigate}
+            className="flex items-center gap-2.5 rounded-xl border-l-2 border-transparent px-3 py-2 text-sm text-muted transition hover:bg-panel hover:text-white"
+          >
+            <Send className="h-4 w-4 shrink-0" />
+            Canal Telegram
+          </a>
+        ) : null}
+        {user && (
+          <>
+            <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Compte</p>
+            {accountLinks.map((l) => (
+              <NavItem key={l.to} to={l.to} label={l.label} icon={l.icon} onNavigate={onNavigate} />
+            ))}
+          </>
+        )}
+        <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Premium</p>
+        {premiumLinks.map((l) => (
           <NavItem
             key={l.to}
             to={l.to}
             label={l.label}
             icon={l.icon}
-            count={counts[l.key]}
+            count={l.key ? counts[l.key] : undefined}
+            locked={!!user && !premium}
             onNavigate={onNavigate}
           />
         ))}
-        {user &&
-          memberLinks.map((l) => (
-            <NavItem
-              key={l.to}
-              to={l.to}
-              label={l.label}
-              icon={l.icon}
-              count={l.key === 'topProbas' ? counts.topProbas : null}
-              onNavigate={onNavigate}
-            />
-          ))}
+        <NavItem to="/pricing" label="Tarifs" icon={Sparkles} onNavigate={onNavigate} />
         {showAdmin && (
           <>
             <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Admin</p>
@@ -137,29 +183,7 @@ export function Sidebar({ counts, mobileOpen = false, onNavigate }: SidebarProps
         )}
       </nav>
       {user && (
-        <div className="mt-auto space-y-1 border-t border-border pt-4">
-          <NavLink
-            to="/profile"
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition',
-                isActive ? 'bg-accent/10 text-white' : 'text-muted hover:bg-panel hover:text-white',
-              )
-            }
-          >
-            <UserAvatar user={user} size="sm" />
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-2">
-                <span className="block truncate font-medium text-white">{user.display_name}</span>
-                {showAdmin && <Badge tone="accent">{adminRoleLabel(user)}</Badge>}
-              </span>
-              <span className="block truncate text-[11px] text-muted">
-                {user.telegram_username ? `@${user.telegram_username}` : `@${user.username}`}
-              </span>
-            </span>
-            <User className="h-4 w-4 shrink-0 opacity-60" />
-          </NavLink>
+        <div className="mt-auto border-t border-border pt-4">
           <button
             type="button"
             onClick={() => {

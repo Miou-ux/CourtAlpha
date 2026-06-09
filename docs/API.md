@@ -24,13 +24,22 @@ Tuiles Live Tracker enrichies (proba, EV, Kelly, Brier).
 
 Query : `ev_min_pct` (déf. 15), `mode=value|all` (`value` = EV+ uniquement, `all` = un côté par match scanné).
 
-Retour : `picks[]`, `bankroll.available_eur`, `n_scanned`.
+Retour : `picks[]` (champ `existing_stake_eur` si pari déjà posé sur le compte), `bankroll.available_eur`, `n_scanned`.
 
 ### `GET /api/picks/jour`
-Picks `/jour` / `/picks` (proba > 60 %, EV > 15 %).
+Picks `/jour` / `/picks` (proba > 60 %, EV > 15 %). **Premium.** Chaque pick inclut `existing_stake_eur` (cumul mises sur ce match/joueur).
 
 ### `GET /api/picks/top5`
-Top 5 proba, bande EV 15–100 %.
+Top 5 proba, bande EV 15–100 %. **Premium.** Chaque pick inclut `existing_stake_eur`.
+
+### `GET /api/picks/one-day-one-pick`
+Replay public **1 Day 1 Pick** : un pick par jour calendaire (meilleur rank=1 entre ATP et WTA, proba favori modèle max), tournois main draw 250+, bande EV favori 15–100 %.
+
+Query : `bankroll_start` (déf. 100), `ev_min_pct` (déf. 15), `ev_max_pct` (déf. 100), `exclude_today` (déf. **false** — jour courant inclus).
+
+Retour : `selection`, `today_date`, `pick_today` (source `db` ou `live`), `period`, `summary`, `picks[]`, `curve[]`.
+
+**Sans Bearer** — page publique `/1-day-1-pick`.
 
 ### `GET /api/picks/top-probas`
 Top 15 probas favori modèle (graphique + tableau).
@@ -91,6 +100,50 @@ Enregistre un pari via `save_bet_enriched`.
 
 `ev_at_bet` = fraction (ex. 1.248 pour +124,8 %), aligné Streamlit.
 
+## Billing premium (ETH HD)
+
+Endpoints sous `/api/billing/*` — activation si `COURTALPHA_BILLING_ENABLED=1` et mnemonic/RPC configurés.
+
+### `GET /api/billing/plans`
+Liste des offres premium (ex. Premium 30 jours).
+
+### `GET /api/billing/config`
+Chaîne, adresse de dépôt HD, contrat fallback (lecture seule).
+
+### `POST /api/billing/orders`
+Crée une commande de paiement (Bearer requis). Retour : `order_id`, `deposit_address`, `price_wei`, `expires_at`.
+
+### `GET /api/billing/orders/{order_id}`
+Statut commande (`pending` / `paid` / `expired`).
+
+Indexer : `scripts/billing_indexer.py` + cron `deploy/cron/billing-indexer`. Doc : `BettingHUD/docs/BILLING_ETH.md`.
+
+## Analytics
+
+### `POST /api/analytics/pageview`
+Enregistre une vue de page SPA (sans auth obligatoire ; username si Bearer présent).
+
+```json
+{
+  "path": "/live",
+  "referrer": "https://www.google.com/",
+  "utm_source": "twitter",
+  "utm_medium": "social",
+  "utm_campaign": "roland_garros"
+}
+```
+
+Déduplication 30 s. Pays = code ISO (headers CDN ou GeoIP à l’enregistrement). Source dérivée du referrer + UTM.
+
+### `GET /api/analytics/traffic`
+Rapport fréquentation — **admin uniquement**.
+
+Query : `days` (déf. 30, max 90).
+
+Retour : `summary`, `daily[]`, `top_pages[]`, `top_sources[]`, `top_countries[]`, `top_referrers[]`, `hourly_today[]`.
+
+---
+
 ## Analyse & ops (admin)
 
 Bearer requis + rôle **`owner`** ou **`admin`** (ou username `miouppy`). Sinon **403**.
@@ -116,7 +169,13 @@ Retour : `summary`, `history` (courbe bankroll), `daily_pnls`.
 Drift modèle sur paris réels clos (`model_tracking.compute_tracking`).
 
 ### `GET /api/system/status`
-Diagnostic ops : snapshot, CSV prematch, daemon portfolio, fraîcheur données.
+Diagnostic ops (admin) : snapshot, CSV prematch, daemon portfolio, fraîcheur données, **pipelines** (ML, Sackmann, TML, snapshot, scraper TE) avec dernière MAJ, prochaine MAJ prévue et état `running`.
+
+### `POST /api/system/jobs/{job_id}/run`
+Lance un job en arrière-plan (admin). `job_id` : `ml_train`, `sync_sackmann`, `sync_tml`, `rebuild_snapshot`, `scrape_te`. Retour **409** si déjà en cours.
+
+### `GET /api/system/jobs/{job_id}`
+État d'un job (`idle`, `running`, `done`, `failed`, `log_path`).
 
 ## Auth (PREPROD)
 
@@ -131,7 +190,7 @@ Session courante. **200** avec `user: null` si anonyme (pages publiques). En PRO
 
 ### Pages publiques (PROD, `BETTINGHUD_WEB_AUTH_REQUIRED=1`)
 
-Sans token : `/live`, `/paris`, `/top5` + `GET /api/live/*`, `GET /api/picks/jour`, `GET /api/picks/top5`.  
+Sans token : `/live`, `/paris`, `/top5`, `/1-day-1-pick` + `GET /api/live/*`, `GET /api/picks/jour`, `GET /api/picks/top5`, `GET /api/picks/one-day-one-pick`.  
 Pas de bankroll affichée (`bankroll: null` sur value-bets). Paris interactifs → login.
 
 ### `POST /api/auth/logout`

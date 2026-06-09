@@ -137,9 +137,11 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
   const scopeHint =
     summary?.scope === 'telegram'
       ? `Portefeuille Telegram @${user?.telegram_username ?? summary.telegram_user_id}`
-      : 'Liez Telegram dans Profil pour votre bankroll personnelle'
+      : summary?.scope === 'web'
+        ? `Portefeuille app · ${user?.display_name ?? user?.username ?? 'compte'}`
+        : 'Connectez-vous pour votre bankroll personnelle'
 
-  const canAdjustBankroll = !!user && summary?.scope === 'telegram' && !!br
+  const canAdjustBankroll = !!user && !!br && summary?.scope !== 'unlinked'
   const bankrollAvail = br?.available_eur ?? 0
 
   return (
@@ -195,9 +197,9 @@ export function PortfolioPage({ summary: summaryProp, bets: betsProp, loading: l
                   {br.manual_adjust_eur.toFixed(2)} €
                 </p>
               )}
-              {user && summary?.scope !== 'telegram' && (
+              {user && summary?.scope === 'telegram' && (
                 <p className="mt-2 text-xs text-muted">
-                  Associez votre compte Telegram dans Profil pour ajouter ou retirer des fonds.
+                  Bankroll synchronisée avec le bot Telegram (<code>/br</code>, dépôts / retraits).
                 </p>
               )}
             </Card>

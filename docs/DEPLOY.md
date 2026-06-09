@@ -36,6 +36,27 @@ curl -s -o /dev/null -w '%{http_code}\n' https://courtalpha.tech/
 curl -s -o /dev/null -w '%{http_code}\n' https://admin.courtalpha.tech/
 ```
 
+## Mise à jour (PROD — sans commit git)
+
+Méthode utilisée quand le code local n’est pas encore poussé sur GitHub :
+
+```powershell
+# CourtAlpha — API + docs
+cd O:\Miouppy\Documents\CourtAlpha
+tar czf $env:TEMP/courtalpha-deploy.tgz --exclude=node_modules --exclude=.env --exclude=.git api deploy docs frontend .env.example .env.prod.example README.md
+scp $env:TEMP/courtalpha-deploy.tgz bettinghud:/tmp/
+ssh bettinghud "cd /opt/courtalpha && tar xzf /tmp/courtalpha-deploy.tgz && sudo systemctl restart courtalpha-api"
+
+# Frontend (build + dist)
+.\deploy\deploy_frontend.ps1
+
+# BettingHUD — scripts + docs + crons
+cd O:\Miouppy\Documents\BettingHUD
+tar czf $env:TEMP/bettinghud-deploy.tgz --exclude=venv --exclude=data --exclude=models --exclude=.git scripts deploy docs app requirements.txt
+scp $env:TEMP/bettinghud-deploy.tgz bettinghud:/tmp/
+ssh bettinghud "cd /opt/bettinghud && tar xzf /tmp/bettinghud-deploy.tgz && sudo cp deploy/cron/morning-pipeline /etc/cron.d/bettinghud-morning && sudo systemctl restart bettinghud-telegram-bot"
+```
+
 ## Mise à jour (PROD — git pull)
 
 Le serveur clone le repo dans `/opt/courtalpha` :
@@ -64,6 +85,15 @@ bash deploy/deploy_frontend.sh bettinghud --skip-build
 > **Ne pas** utiliser `scp -r dist ...` seul : sous Windows, `scp` crée `dist/` en `700` et nginx renvoie **403**. Le script appelle `deploy/fix_frontend_permissions.sh` sur le serveur après chaque upload.
 
 > `.env` et `frontend/dist/` ne sont **pas** dans git — ils restent sur le SD entre les pulls.
+
+## SEO (sitemap / robots)
+
+`sitemap.xml` et `robots.txt` sont dans `frontend/public/` et déployés avec `dist/` (Vite les copie à la racine). Après un build + `deploy_frontend`, vérifier :
+
+```bash
+curl -sI https://courtalpha.tech/sitemap.xml | head -1
+curl -sI https://courtalpha.tech/robots.txt | head -1
+```
 
 ## Mise à jour (fallback tarball)
 

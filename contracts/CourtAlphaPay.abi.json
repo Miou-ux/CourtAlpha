@@ -1,0 +1,19 @@
+[
+  {
+    "type": "function",
+    "name": "pay",
+    "inputs": [{ "name": "paymentRef", "type": "bytes32" }],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "event",
+    "name": "Paid",
+    "inputs": [
+      { "name": "paymentRef", "type": "bytes32", "indexed": true },
+      { "name": "payer", "type": "address", "indexed": true },
+      { "name": "amount", "type": "uint256", "indexed": false }
+    ],
+    "anonymous": false
+  }
+]

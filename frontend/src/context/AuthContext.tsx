@@ -12,6 +12,7 @@ type AuthState = {
   logout: () => Promise<void>
   updateProfile: (body: ProfileUpdatePayload) => Promise<void>
   uploadAvatar: (file: File) => Promise<void>
+  refreshSession: () => Promise<void>
 }
 
 const TOKEN_KEY = 'bettinghud_web_token'
@@ -98,6 +99,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [token],
   )
 
+  const refreshSession = useCallback(async () => {
+    await refresh(token)
+  }, [refresh, token])
+
   const value = useMemo(
     () => ({
       user,
@@ -110,8 +115,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       updateProfile,
       uploadAvatar,
+      refreshSession,
     }),
-    [user, token, authRequired, registrationOpen, loading, login, register, logout, updateProfile, uploadAvatar],
+    [
+      user,
+      token,
+      authRequired,
+      registrationOpen,
+      loading,
+      login,
+      register,
+      logout,
+      updateProfile,
+      uploadAvatar,
+      refreshSession,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

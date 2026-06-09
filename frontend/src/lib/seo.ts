@@ -1,0 +1,28 @@
+export {
+  SITE_URL,
+  SITE_HOST,
+  INDEXNOW_KEY,
+  INDEXNOW_KEY_URL,
+  COURTALPHA_ABOUT,
+  SITE_NAME,
+  DEFAULT_DESCRIPTION,
+  OG_IMAGE,
+  OG_IMAGE_PICK,
+  TELEGRAM_CHANNEL_URL,
+  SHARE_TRACK_RECORD_URL,
+  trackRecordUrl,
+  SITEMAP_STATIC_PATHS,
+  archiveMonthPaths,
+  allSitemapPaths,
+  PAGE_SEO,
+  ONE_DAY_ONE_PICK_EDITORIAL,
+  PRICING_FAQ,
+  METHODOLOGY_SECTIONS,
+  archiveSeo,
+  seoForPath,
+  canonicalUrl,
+  jsonLdForPath,
+  noscriptHtmlForPath,
+} from './seoData'
+
+export type { RobotsDirective, PageSeo } from './seoData'

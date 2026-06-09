@@ -7,9 +7,9 @@ from fastapi import APIRouter, Depends, Query
 
 from api.auth_tokens import auth_required
 from api.bridge import bootstrap_bettinghud
-from api.routes.auth import current_user
+from api.routes.auth import current_user, require_premium
 from api.serialize import to_jsonable
-from api.user_scope import bankroll_for_user
+from api.user_scope import bankroll_for_user, enrich_picks_existing_stake, existing_stakes_index
 
 router = APIRouter(prefix="/live", tags=["live"])
 PARIS = ZoneInfo("Europe/Paris")
@@ -26,7 +26,7 @@ def _snapshot_age_min(meta: dict) -> float | None:
 
 
 @router.get("/meta")
-def live_meta() -> dict:
+def live_meta(_user: dict = Depends(require_premium)) -> dict:
     bootstrap_bettinghud()
     from scripts.daily_top_proba_store import load_today_matches_for_daily_top_proba
     from scripts.live_tracker_picks import filter_live_tracker_day_matches
@@ -47,7 +47,7 @@ def live_meta() -> dict:
 def live_value_bets(
     ev_min_pct: float = Query(15.0, ge=0, le=100),
     mode: str = Query("value", description="value = EV+ uniquement, all = un côté par match"),
-    user: dict | None = Depends(current_user),
+    user: dict = Depends(require_premium),
 ) -> dict:
     """Tuiles Live Tracker : value bets enrichies (proba, EV, Kelly, segment Brier)."""
     bootstrap_bettinghud()
@@ -96,6 +96,8 @@ def live_value_bets(
     conn = sqlite3.connect(DB_PATH_DEFAULT)
     try:
         bankroll = bankroll_for_user(conn, user)
+        stakes = existing_stakes_index(conn, user)
+        enrich_picks_existing_stake(picks, stakes)
     finally:
         conn.close()
 
@@ -114,6 +116,7 @@ def live_value_bets(
 @router.get("/matches")
 def live_matches(
     today_only: bool = Query(True, description="Matchs du jour (Europe/Paris)"),
+    _user: dict = Depends(require_premium),
 ) -> dict:
     bootstrap_bettinghud()
     from scripts.daily_top_proba_store import load_today_matches_for_daily_top_proba

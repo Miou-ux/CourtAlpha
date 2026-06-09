@@ -1,16 +1,34 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
+import { isPremium } from '../lib/auth'
 import { useAuth } from '../context/AuthContext'
 
 export function useDashboardData() {
   const { token, user } = useAuth()
   const loggedIn = !!user && !!token
+  const premium = isPremium(user)
 
   const health = useQuery({ queryKey: ['health'], queryFn: api.health })
-  const meta = useQuery({ queryKey: ['live-meta'], queryFn: api.liveMeta })
-  const matches = useQuery({ queryKey: ['live-matches'], queryFn: api.liveMatches })
-  const picks = useQuery({ queryKey: ['picks-jour'], queryFn: api.picksJour })
-  const top5 = useQuery({ queryKey: ['picks-top5'], queryFn: api.picksTop5 })
+  const meta = useQuery({
+    queryKey: ['live-meta', token],
+    queryFn: () => api.liveMeta(token),
+    enabled: premium,
+  })
+  const matches = useQuery({
+    queryKey: ['live-matches', token],
+    queryFn: () => api.liveMatches(token),
+    enabled: premium,
+  })
+  const picks = useQuery({
+    queryKey: ['picks-jour', token],
+    queryFn: () => api.picksJour(token),
+    enabled: premium,
+  })
+  const top5 = useQuery({
+    queryKey: ['picks-top5', token],
+    queryFn: () => api.picksTop5(token),
+    enabled: premium,
+  })
   const portfolio = useQuery({
     queryKey: ['portfolio-summary', token],
     queryFn: () => api.portfolioSummary(token),
@@ -24,24 +42,20 @@ export function useDashboardData() {
 
   const loading =
     health.isLoading ||
-    meta.isLoading ||
-    matches.isLoading ||
-    picks.isLoading ||
-    top5.isLoading
+    (premium && (meta.isLoading || matches.isLoading || picks.isLoading || top5.isLoading))
 
   const error =
     health.error ||
-    meta.error ||
-    matches.error ||
-    picks.error ||
-    top5.error
+    (premium ? meta.error || matches.error || picks.error || top5.error : null)
 
   const refetchAll = () => {
     void health.refetch()
-    void meta.refetch()
-    void matches.refetch()
-    void picks.refetch()
-    void top5.refetch()
+    if (premium) {
+      void meta.refetch()
+      void matches.refetch()
+      void picks.refetch()
+      void top5.refetch()
+    }
     if (loggedIn) {
       void portfolio.refetch()
       void bets.refetch()

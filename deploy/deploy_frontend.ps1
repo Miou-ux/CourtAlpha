@@ -16,6 +16,12 @@ $RemoteDist = "/opt/courtalpha/frontend/dist"
 Push-Location $Frontend
 try {
     if (-not $SkipBuild) {
+        Write-Host "==> OG snapshot"
+        $bhRoot = Join-Path (Split-Path -Parent $Root) "BettingHUD"
+        $ogScript = Join-Path $bhRoot "scripts/generate_og_snapshot.py"
+        if (Test-Path $ogScript) {
+            py -3 $ogScript
+        }
         Write-Host "==> npm run build"
         npm run build
         if ($LASTEXITCODE -ne 0) { throw "npm run build failed ($LASTEXITCODE)" }
@@ -32,10 +38,14 @@ try {
     & scp -r "$Dist/." "${SshHost}:${RemoteDist}/"
     if ($LASTEXITCODE -ne 0) { throw "scp failed ($LASTEXITCODE)" }
 
-    Write-Host "==> permissions nginx"
+    Write-Host "==> permissions nginx (dirs 755, www-data traverse dist/)"
     $fixCmd = "find $RemoteDist -type d -exec chmod 755 {} + 2>/dev/null; find $RemoteDist -type f -exec chmod 644 {} + 2>/dev/null; echo ok: permissions nginx"
     & ssh $SshHost $fixCmd
     if ($LASTEXITCODE -ne 0) { throw "fix permissions failed ($LASTEXITCODE)" }
+
+    Write-Host "==> IndexNow ping"
+    npm run indexnow
+    if ($LASTEXITCODE -ne 0) { Write-Warning "IndexNow ping failed (non bloquant)" }
 
     Write-Host "==> Done - https://courtalpha.tech/"
 }

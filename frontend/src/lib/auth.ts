@@ -9,6 +9,12 @@ export function isAdmin(user: AuthUser | null | undefined): boolean {
   return user.username.trim().toLowerCase() === 'miouppy'
 }
 
+export function isPremium(user: AuthUser | null | undefined): boolean {
+  if (!user) return false
+  if (isAdmin(user)) return true
+  return !!user.premium_active
+}
+
 export function adminRoleLabel(user: AuthUser): string {
   const role = (user.role || 'user').trim().toLowerCase()
   if (role === 'owner') return 'Owner'

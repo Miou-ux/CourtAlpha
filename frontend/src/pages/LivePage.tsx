@@ -5,7 +5,8 @@ import type { LiveValueBet } from '../api/client'
 import { api } from '../api/client'
 import { BetModal } from '../components/BetModal'
 import { EmptyState } from '../components/EmptyState'
-import { FilterPills, type CircuitFilter } from '../components/FilterPills'
+import { FilterPills, type CircuitFilter, type LiveRangeFilters } from '../components/FilterPills'
+import { pickModelProbaPct } from '../lib/modelProba'
 import { PageHero } from '../components/PageHero'
 import { ValueBetCard } from '../components/ValueBetCard'
 import { CardGridSkeleton } from '../components/ui/card-skeleton'
@@ -27,11 +28,24 @@ function matchCircuit(p: LiveValueBet): string {
   return (p.tour || '').toUpperCase()
 }
 
+function pickBookOdd(p: LiveValueBet): number | null {
+  const o = p.odd_book ?? p.odd_fav
+  return o != null && o > 1 ? o : null
+}
+
+function parseOptionalNumber(raw: string): number | null {
+  const t = raw.trim()
+  if (!t) return null
+  const n = Number(t)
+  return Number.isFinite(n) ? n : null
+}
+
 export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
   const { token, user } = useAuth()
   const navigate = useNavigate()
   const [circuit, setCircuit] = useState<CircuitFilter>('all')
   const [search, setSearch] = useState('')
+  const [ranges, setRanges] = useState<LiveRangeFilters>({ probaMin: '', oddMin: '', oddMax: '' })
   const [mode, setMode] = useState<'value' | 'all'>('value')
   const [betDraft, setBetDraft] = useState<BetDraft | null>(null)
 
@@ -46,14 +60,24 @@ export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
 
   const filtered = useMemo(() => {
     const ql = search.trim().toLowerCase()
+    const probaMin = parseOptionalNumber(ranges.probaMin)
+    const oddMin = parseOptionalNumber(ranges.oddMin)
+    const oddMax = parseOptionalNumber(ranges.oddMax)
     return picks.filter((p) => {
       if (circuit === 'atp' && !matchCircuit(p).includes('ATP')) return false
       if (circuit === 'wta' && !matchCircuit(p).includes('WTA')) return false
+      if (probaMin != null) {
+        const proba = pickModelProbaPct(p)
+        if (proba == null || proba < probaMin) return false
+      }
+      const odd = pickBookOdd(p)
+      if (oddMin != null && (odd == null || odd < oddMin)) return false
+      if (oddMax != null && (odd == null || odd > oddMax)) return false
       if (!ql) return true
       const blob = `${p.bet_on || ''} ${p.opponent || ''} ${p.tournament || ''}`.toLowerCase()
       return blob.includes(ql)
     })
-  }, [picks, circuit, search])
+  }, [picks, circuit, search, ranges])
 
   return (
     <div>
@@ -71,7 +95,14 @@ export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
       />
 
       <div className="mb-4 flex flex-wrap items-stretch gap-3">
-        <FilterPills circuit={circuit} search={search} onCircuit={setCircuit} onSearch={setSearch} />
+        <FilterPills
+          circuit={circuit}
+          search={search}
+          onCircuit={setCircuit}
+          onSearch={setSearch}
+          ranges={ranges}
+          onRanges={(patch) => setRanges((prev) => ({ ...prev, ...patch }))}
+        />
         <div className="flex shrink-0 rounded-xl border border-border bg-bg-elevated p-0.5 text-xs">
           <button
             type="button"
@@ -103,7 +134,11 @@ export function LivePage({ scanned, bootstrapLoading }: LivePageProps) {
       ) : filtered.length === 0 ? (
         <EmptyState
           title="Aucune tuile pour ces filtres"
-          hint={mode === 'value' ? 'Passe en « Tous les matchs » ou baisse le seuil EV côté API.' : 'Vérifie le snapshot PREPROD.'}
+          hint={
+            mode === 'value'
+              ? 'Assouplis proba/cote, passe en « Tous les matchs », ou vide les filtres.'
+              : 'Assouplis les filtres proba/cote ou vérifie le snapshot.'
+          }
         />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">

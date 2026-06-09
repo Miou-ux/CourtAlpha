@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
 from api.bridge import bootstrap_bettinghud
-from api.auth_tokens import auth_required
-from api.routes.auth import current_user
+from api.routes.auth import require_premium
 from api.serialize import to_jsonable
 
 router = APIRouter(prefix="/bets", tags=["bets"])
@@ -27,13 +26,12 @@ class BetCreate(BaseModel):
 
 
 @router.post("")
-def create_bet(body: BetCreate, user: dict | None = Depends(current_user)) -> dict:
-    if auth_required() and not user:
-        raise HTTPException(status_code=401, detail="Authentification requise")
+def create_bet(body: BetCreate, user: dict = Depends(require_premium)) -> dict:
     bootstrap_bettinghud()
     from scripts.bets_db import save_bet_enriched
 
     tg = str((user or {}).get("telegram_user_id") or "").strip() or None
+    web_user = str((user or {}).get("username") or "").strip().lower() or None
     bet_id = save_bet_enriched(
         match_name=body.match_name,
         bet_on=body.bet_on,
@@ -48,5 +46,6 @@ def create_bet(body: BetCreate, user: dict | None = Depends(current_user)) -> di
         tracker_source=body.tracker_source,
         notes=body.notes,
         telegram_user_id=tg,
+        web_username=None if tg else web_user,
     )
     return {"ok": True, "bet_id": bet_id, "bet": to_jsonable(body.model_dump())}

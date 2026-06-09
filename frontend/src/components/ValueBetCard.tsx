@@ -5,6 +5,7 @@ import { cn } from '../lib/utils'
 import { computeEvPct, computeKellyStake, evTier, isPremiumSegment } from '../lib/liveMetrics'
 import { evPctStyles, formatEvPct } from '../lib/evDisplay'
 import { pickModelProbaPct } from '../lib/modelProba'
+import { PickMatchupDisplay } from './PickMatchupDisplay'
 import { Badge } from './Badge'
 import { ProbaDisplay } from './ProbaDisplay'
 import { WhyValuePanel } from './WhyValuePanel'
@@ -34,6 +35,7 @@ export function ValueBetCard({ pick, bankrollAvail, onBet }: ValueBetCardProps) 
     [pModel, customOdd, segBrier, bankrollAvail],
   )
   const premium = isPremiumSegment(segBrier)
+  const existingStake = pick.existing_stake_eur ?? 0
   const tour = (pick.tour || '').toUpperCase()
   const tier = evTier(evCustom)
   const evStyle = evPctStyles(evCustom)
@@ -52,10 +54,8 @@ export function ValueBetCard({ pick, bankrollAvail, onBet }: ValueBetCardProps) 
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold leading-snug tracking-tight">
-            {pick.bet_on} <span className="font-normal text-muted">vs</span> {pick.opponent}
-          </h3>
-          <p className="mt-1 text-xs text-muted">
+          <PickMatchupDisplay pick={pick} variant="stacked" />
+          <p className="mt-2 text-xs text-muted">
             {pick.tournament} · {pick.match_time || pick.surface || '—'}
           </p>
         </div>
@@ -64,6 +64,7 @@ export function ValueBetCard({ pick, bankrollAvail, onBet }: ValueBetCardProps) 
           {tour.includes('WTA') && <Badge tone="wta">WTA</Badge>}
           {pick.is_value && <Badge tone="success">Value</Badge>}
           {premium && <Badge tone="success">Premium</Badge>}
+          {existingStake > 0 && <Badge tone="atp">Déjà {existingStake.toFixed(2)} €</Badge>}
         </div>
       </div>
 
@@ -96,7 +97,7 @@ export function ValueBetCard({ pick, bankrollAvail, onBet }: ValueBetCardProps) 
             <ChevronDown className={cn('h-4 w-4 transition', detailsOpen && 'rotate-180')} />
           </Button>
           <Button variant="success" size="sm" onClick={() => onBet(pick, customOdd, kelly.eur)}>
-            <Target className="h-4 w-4" /> Parier
+            <Target className="h-4 w-4" /> {existingStake > 0 ? 'Ajouter' : 'Parier'}
           </Button>
         </div>
       </div>

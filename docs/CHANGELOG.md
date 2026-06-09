@@ -1,5 +1,161 @@
 # Changelog — CourtAlpha
 
+## 2026-06-09 (b) — Déjà parié + Kelly modal
+
+| Livrable | Détail |
+|----------|--------|
+| API | `existing_stake_eur` sur picks (`/api/picks/*`, `/api/live/value-bets`) |
+| UI | Badge « Déjà X € » sur `PickCard` / `ValueBetCard` |
+| BetModal | Mise Kelly recalculée quand la cote observée change |
+
+---
+
+## 2026-06-09 — Déploiement PROD + UX paris
+
+| Livrable | Détail |
+|----------|--------|
+| Déploiement | API + frontend sur `courtalpha.tech` (tar/scp + `deploy_frontend.ps1`) |
+| BetModal | Cote observée éditable sur **Top 5** et **Paris du jour** (EV recalculée) |
+| Telegram | Top 5 matinal interactif (boutons Parier) — scripts BettingHUD déployés |
+| Doc | Alignement TELEGRAM_TOP5, crons 07:00/07:05, gating premium |
+
+---
+
+## 2026-06-08 — Premium ETH phase 1–2 (contrat + checkout)
+
+| Livrable | Détail |
+|----------|--------|
+| Contrat | `contracts/CourtAlphaPay.sol` + ABI |
+| Indexer | `billing_indexer.py` + cron `billing-indexer` |
+| API | `POST /api/billing/orders`, `GET /orders/{id}`, `GET /config` |
+| UI | `PremiumCheckout` MetaMask/viem sur `/pricing` |
+
+Configurer `COURTALPHA_BILLING_CONTRACT` + `COURTALPHA_BILLING_RPC_URL` pour activer les paiements.
+
+---
+
+## 2026-06-08 — Premium ETH phase 0 (gating)
+
+| Livrable | Détail |
+|----------|--------|
+| Tiers | Public : 1 Day 1 Pick · Gratuit : portfolio · Premium : live, top5, top-probas, paris |
+| Backend | `web_billing.py`, `require_premium`, `GET /api/billing/plans` |
+| UI | `/pricing`, Sidebar groupes, `ProtectedRoute premiumOnly` |
+| Admin | `scripts/grant_premium.py` |
+
+---
+
+## 2026-06-08 — SEO pack 1
+
+| Livrable | Détail |
+|----------|--------|
+| Sitemap | `frontend/public/sitemap.xml` — `/live`, `/paris`, `/top5`, `/1-day-1-pick` |
+| Robots | `frontend/public/robots.txt` — allow pages publiques, disallow admin/membre/API |
+| Meta / OG | `lib/seo.ts` + `usePageSeo` — title, description, `og:*` par route |
+| noindex | Admin (`/backtest`, `/tracking`, `/frequentation`, `/settings`), membre (`/top-probas`, `/portfolio`, `/profile`), `/login`, redirections |
+
+---
+
+## 2026-06-08 — Paramètres : pipelines données + MAJ manuelle
+
+| Livrable | Détail |
+|----------|--------|
+| Page `/settings` | ML, Sackmann, TML, snapshot, scraper TE — dernière / prochaine MAJ + bouton forcer |
+| API | `pipelines[]` dans `/api/system/status` · `POST /api/system/jobs/{id}/run` |
+| Jobs | `scripts/system_jobs.py` (logs `data/logs/web_job_*.log`) |
+| Meta | `last_tml_sync_ts` / `last_sackmann_sync_ts` |
+
+---
+
+## 2026-06-05 — Fix déconnexions admin (sessions API)
+
+| Livrable | Détail |
+|----------|--------|
+| Cause | Tokens Bearer uniquement en RAM → perdus à chaque `systemctl restart courtalpha-api` |
+| Fix | Persistance SQLite `web_api_tokens` dans `bettinghud.db` |
+| TTL | 7 j par défaut, sliding refresh à chaque requête auth (`BETTINGHUD_WEB_TOKEN_SLIDE`) |
+
+---
+
+## 2026-06-05 — Fréquentation : sources & pays
+
+| Livrable | Détail |
+|----------|--------|
+| Sources | Google, X/Twitter, Telegram, Facebook, UTM, direct, domaines referrer |
+| Pays | Code ISO via en-têtes CDN ou lookup GeoIP (ip-api.com, sans IP stockée) |
+| UTM | Capturés à l’atterrissage (`utm_source`, `utm_medium`, `utm_campaign`) |
+
+---
+
+## 2026-06-05 — Admin : fréquentation web
+
+| Livrable | Détail |
+|----------|--------|
+| Page | `/frequentation` (admin) — vues/jour, visiteurs, top pages, horaire Paris |
+| API | `POST /api/analytics/pageview` (public), `GET /api/analytics/traffic` (admin) |
+| Stockage | Table `web_page_views` dans `bettinghud.db` (rétention 90 j) |
+| Tracking | Hook `usePageViewAnalytics` sur chaque changement de route |
+
+---
+
+## 2026-06-05 — Suppression Track record (doublon)
+
+| Livrable | Détail |
+|----------|--------|
+| Retiré | Page `/track-record`, API `daily-top1-replay`, `TrackRecordPage`, lien sidebar |
+| Redirection | `/track-record` et `/top1-historique` → `/1-day-1-pick` |
+
+---
+
+## 2026-06-05 — 1 Day 1 Pick : texte hero
+
+| Livrable | Détail |
+|----------|--------|
+| Sous-titre | Retrait EV 15–100 % / Kelly / « today excluded » ; mention explicite **BR initiale 100 €** |
+| Stats hero | Tuile **BR initiale · 100 €** |
+
+---
+
+## 2026-06-05 — 1 Day 1 Pick : scores lisibles
+
+| Livrable | Détail |
+|----------|--------|
+| Scores | Format TE `7 6 \| 62 2` → affichage sets `7-6, 6-2` (`score_display` + `scripts/score_display.py`) |
+| Table | Colonne score sans police mono |
+
+---
+
+## 2026-06-05 — 1 Day 1 Pick : pick du jour
+
+| Livrable | Détail |
+|----------|--------|
+| Pick du jour | Carte mise en avant en tête de page (`pick_today`) |
+| Live fallback | Si pas encore en SQLite : calcul depuis snapshot live (rank=1 ATP vs WTA) |
+| Historique | Jour courant inclus par défaut (`exclude_today=false`) — la liste s'allonge chaque jour via daemon |
+| Rafraîchissement | Page React : refetch auto toutes les 10 min |
+
+---
+
+## 2026-06-05 — Live Tracker : filtres proba / cote
+
+| Livrable | Détail |
+|----------|--------|
+| Filtres UI | Barre Live Tracker : **proba min (%)**, **cote min**, **cote max** (client-side, cumulables avec circuit / recherche) |
+| Cible | Cote book (`odd_book` / `odd_fav`), proba modèle du pick parié |
+
+---
+
+## 2026-06-05 — 1 Day 1 Pick (page publique + API)
+
+| Livrable | Détail |
+|----------|--------|
+| Page publique | `/1-day-1-pick` — replay réel : 1 pick/jour (meilleur rank=1 ATP vs WTA), résultats + courbe bankroll |
+| API | `GET /api/picks/one-day-one-pick` — sans auth ; params `bankroll_start`, `ev_min_pct`, `ev_max_pct`, `exclude_today` |
+| Service | `api/services/one_day_one_pick.py` — `build_one_day_one_pick_replay` depuis `daily_top_proba_picks` |
+| Nav | Lien sidebar + onglet mobile « 1 Pick » ; `PUBLIC_APP_PATHS` |
+
+---
+
 ## 2026-06-05 (prod) — Auth publique, bankroll, deploy UI
 
 | Livrable | Détail |
