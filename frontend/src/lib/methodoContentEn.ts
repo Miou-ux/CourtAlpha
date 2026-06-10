@@ -57,7 +57,8 @@ export const METHODO_BACKTEST_ROWS = [
     bets: 1220,
     days: 292,
     hitPct: 71.4,
-    roiPct: 26.25,
+    roiYearPct: 17.6,
+    roi1d1pPct: 30.2,
     brier: 0.172,
     note: null,
   },
@@ -66,23 +67,25 @@ export const METHODO_BACKTEST_ROWS = [
     bets: 1212,
     days: 296,
     hitPct: 76.5,
-    roiPct: 37.86,
+    roiYearPct: 29.2,
+    roi1d1pPct: 43.0,
     brier: 0.14,
     note: null,
   },
   {
     year: '2026',
-    bets: 450,
-    days: 108,
-    hitPct: 65.1,
-    roiPct: 18.31,
-    brier: 0.191,
+    bets: 395,
+    days: 114,
+    hitPct: 65.3,
+    roiYearPct: 29.9,
+    roi1d1pPct: 34.6,
+    brier: 0.179,
     note: 'Partial year (Jan–May)',
   },
 ] as const
 
 export const METHODO_BACKTEST_FOOTNOTE =
-  'Protocol: ATP+WTA, G/M/A tournaments, EV 15–100%, Top 5/day sorted by model probability, fixed 1-unit stake, model trained before each test year. Full details not published — indicative results, past ≠ future.'
+  'Protocol: ATP+WTA, G/M/A tournaments, EV 15–100%, Top 5/day sorted by model probability, model trained before each test year. Year ROI = ½ Kelly × Brier (15% liquidity cap), relative to total staked volume that year. 1D1P ROI = 1 pick/day (best rank=1 ATP vs WTA), fixed 1-unit stake. Full details not published — indicative results, past ≠ future.'
 
 export const METHODO_NOT_PUBLISHED = [
   'Exact ML model features and architecture',

@@ -52,14 +52,15 @@ export const METHODO_STRATEGY_TEASER = [
   },
 ] as const
 
-/** Top 5 proba, EV min 15 %, mise 1 u — source docs BACKTEST_TOP5_PROBA_VS_EV. */
+/** Top 5 proba — fallback statique si API indisponible (scripts/methodo_yearly_stats.py). */
 export const METHODO_BACKTEST_ROWS = [
   {
     year: '2024',
     bets: 1220,
     days: 292,
     hitPct: 71.4,
-    roiPct: 26.25,
+    roiYearPct: 17.6,
+    roi1d1pPct: 30.2,
     brier: 0.172,
     note: null,
   },
@@ -68,23 +69,25 @@ export const METHODO_BACKTEST_ROWS = [
     bets: 1212,
     days: 296,
     hitPct: 76.5,
-    roiPct: 37.86,
+    roiYearPct: 29.2,
+    roi1d1pPct: 43.0,
     brier: 0.14,
     note: null,
   },
   {
     year: '2026',
-    bets: 450,
-    days: 108,
-    hitPct: 65.1,
-    roiPct: 18.31,
-    brier: 0.191,
+    bets: 395,
+    days: 114,
+    hitPct: 65.3,
+    roiYearPct: 29.9,
+    roi1d1pPct: 34.6,
+    brier: 0.179,
     note: 'Année partielle (janv.–mai)',
   },
 ] as const
 
 export const METHODO_BACKTEST_FOOTNOTE =
-  'Protocole : ATP+WTA, tournois G/M/A, EV 15–100 %, Top 5/jour trié par proba modèle, mise fixe 1 unité, modèle entraîné avant chaque année testée. Détails complets non publiés — résultats indicatifs, passé ≠ futur.'
+  'Protocole : ATP+WTA, tournois G/M/A, EV 15–100 %, Top 5/jour trié par proba modèle, modèle entraîné avant chaque année testée. ROI année = Kelly ½ × Brier (cap 15 % liquidité), rapporté au volume misé sur l’année. ROI 1D1P = 1 pick/jour (meilleur rank=1 ATP vs WTA), mise fixe 1 unité. Détails complets non publiés — résultats indicatifs, passé ≠ futur.'
 
 export const METHODO_NOT_PUBLISHED = [
   'Les features exactes et l’architecture du modèle ML',

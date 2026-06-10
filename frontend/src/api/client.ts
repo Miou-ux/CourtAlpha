@@ -385,6 +385,31 @@ export type OneDayOnePickResponse = {
   generated_at: string
 }
 
+export type MethodoYearlyStatsRow = {
+  year: string
+  bets: number
+  days: number
+  hit_pct: number
+  roi_year_pct: number
+  roi_1d1p_pct: number
+  brier: number
+  days_1d1p?: number
+  note?: string | null
+}
+
+export type MethodoYearlyStatsResponse = {
+  protocol: {
+    selection: string
+    ev_band_pct: [number, number]
+    tours: string[]
+    levels: string[]
+    roi_year: string
+    roi_1d1p: string
+  }
+  rows: MethodoYearlyStatsRow[]
+  generated_from: string
+}
+
 export type BacktestSimulateRequest = {
   year: number
   bankroll_start?: number
@@ -541,6 +566,12 @@ export const api = {
     if (opts?.exclude_today === true) q.set('exclude_today', 'true')
     const qs = q.toString()
     return getJson<OneDayOnePickResponse>(`/api/picks/one-day-one-pick${qs ? `?${qs}` : ''}`)
+  },
+  picksMethodoYearlyStats: (years?: string) => {
+    const q = new URLSearchParams()
+    if (years) q.set('years', years)
+    const qs = q.toString()
+    return getJson<MethodoYearlyStatsResponse>(`/api/picks/methodo-yearly-stats${qs ? `?${qs}` : ''}`)
   },
   picksTopProbas: (
     opts?: { limit?: number; include_challengers?: boolean; ev_band?: boolean },

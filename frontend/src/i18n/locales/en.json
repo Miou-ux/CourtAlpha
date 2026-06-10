@@ -232,10 +232,12 @@
     "colYear": "Year",
     "colBets": "Bets",
     "colHit": "Hit %",
-    "colRoi": "ROI 1u",
+    "colRoiYear": "Year ROI",
+    "colRoi1d1p": "1D1P ROI",
     "colBrier": "Brier",
     "bestHit": "Best hit %",
-    "bestRoi": "Best ROI 1u",
+    "bestRoiYear": "Best year ROI",
+    "bestRoi1d1p": "Best 1D1P ROI",
     "calibration": "Calibration"
   },
   "profile": {

@@ -240,12 +240,19 @@ const EN_INDEXABLE_LOGICAL = [
   '/1-day-1-pick/archive',
 ] as const
 
+/** Strip trailing slash so `/1-day-1-pick/` resolves to the same SEO entry as `/1-day-1-pick`. */
+function normalizePathname(pathname: string): string {
+  if (pathname.length > 1 && pathname.endsWith('/')) return pathname.slice(0, -1)
+  return pathname
+}
+
 export function parseSeoPath(pathname: string): { lang: SeoLang; logicalPath: string } {
-  if (pathname === SEO_EN_PREFIX || pathname.startsWith(`${SEO_EN_PREFIX}/`)) {
-    const logical = pathname === SEO_EN_PREFIX ? '/' : pathname.slice(SEO_EN_PREFIX.length) || '/'
+  const path = normalizePathname(pathname)
+  if (path === SEO_EN_PREFIX || path.startsWith(`${SEO_EN_PREFIX}/`)) {
+    const logical = path === SEO_EN_PREFIX ? '/' : path.slice(SEO_EN_PREFIX.length) || '/'
     return { lang: 'en', logicalPath: logical }
   }
-  return { lang: 'fr', logicalPath: pathname }
+  return { lang: 'fr', logicalPath: path }
 }
 
 export function publicPathFor(logicalPath: string, lang: SeoLang): string {
@@ -594,7 +601,8 @@ export function seoForPath(pathname: string, lang?: string): PageSeo {
 }
 
 export function canonicalUrl(pathname: string): string {
-  const path = pathname === '/' ? '' : pathname
+  const normalized = normalizePathname(pathname)
+  const path = normalized === '/' ? '' : normalized
   return `${SITE_URL}${path}`
 }
 

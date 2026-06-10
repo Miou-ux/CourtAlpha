@@ -108,3 +108,20 @@ def picks_one_day_one_pick(
             exclude_today=bool(exclude_today),
         )
     )
+
+
+@router.get("/methodo-yearly-stats")
+def picks_methodo_yearly_stats(
+    years: str | None = Query(
+        None,
+        description="Comma-separated years (default 2024,2025,2026)",
+    ),
+) -> dict:
+    """Yearly backtest excerpts for /methodo: volume ROI + 1D1P flat ROI."""
+    bootstrap_bettinghud()
+    from api.services.methodo_yearly_stats import build_methodo_yearly_stats
+
+    year_list: list[int] | None = None
+    if years:
+        year_list = [int(y.strip()) for y in years.split(",") if y.strip()]
+    return to_jsonable(build_methodo_yearly_stats(years=year_list))

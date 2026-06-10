@@ -232,10 +232,12 @@
     "colYear": "Année",
     "colBets": "Paris",
     "colHit": "Hit %",
-    "colRoi": "ROI 1u",
+    "colRoiYear": "ROI année",
+    "colRoi1d1p": "ROI 1D1P",
     "colBrier": "Brier",
     "bestHit": "Meilleur hit %",
-    "bestRoi": "Meilleur ROI 1u",
+    "bestRoiYear": "Meilleur ROI année",
+    "bestRoi1d1p": "Meilleur ROI 1D1P",
     "calibration": "Calibration"
   },
   "profile": {
