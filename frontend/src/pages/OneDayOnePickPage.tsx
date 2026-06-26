@@ -1,8 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { api, type OneDayOnePickRow } from '../api/client'
+import { api, type OneDayOnePickRow, type PickRow } from '../api/client'
+import { BetModal } from '../components/BetModal'
 import { Badge } from '../components/Badge'
+import { useAuth } from '../context/AuthContext'
 import { EmptyState } from '../components/EmptyState'
 import { PageHero } from '../components/PageHero'
 import { PickCard } from '../components/PickCard'
@@ -13,12 +17,32 @@ import { BRAND, CHART_TOOLTIP_STYLE } from '../lib/brand'
 import { formatTennisScoreDisplay } from '../lib/scoreDisplay'
 import { ShareTrackRecord } from '../components/ShareTrackRecord'
 import { SeoEditorial } from '../components/SeoEditorial'
+import { PRICING_ENABLED } from '../lib/features'
 import { getOneDayOnePickEditorial } from '../lib/seo'
 import { translateBetStatus } from '../lib/betStatus'
 import { cn } from '../lib/utils'
 
 function pickScore(p: OneDayOnePickRow): string {
   return p.score_display ?? formatTennisScoreDisplay(p.score_final) ?? '—'
+}
+
+function formatReplayNetPl(eur: number | null | undefined): string {
+  if (eur == null) return '—'
+  const sign = eur > 0 ? '+' : ''
+  return `${sign}${eur.toFixed(2)} €`
+}
+
+function replayNetPlClass(eur: number | null | undefined): string {
+  if (eur == null) return 'text-muted'
+  if (eur > 0) return 'text-success'
+  if (eur < 0) return 'text-danger'
+  return 'text-muted'
+}
+
+function isPickBettable(pick: OneDayOnePickRow): boolean {
+  if (pick.void) return false
+  if (pick.won || pick.lost || pick.settled) return false
+  return true
 }
 
 function statusTone(pick: OneDayOnePickRow): 'success' | 'danger' | 'accent' | 'default' {
@@ -30,7 +54,14 @@ function statusTone(pick: OneDayOnePickRow): 'success' | 'danger' | 'accent' | '
 
 export function OneDayOnePickPage() {
   const { t, i18n } = useTranslation()
+  const { user, token } = useAuth()
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const [selected, setSelected] = useState<PickRow | null>(null)
   const editorial = getOneDayOnePickEditorial(i18n.language)
+  const editorialLinks = PRICING_ENABLED
+    ? editorial.links
+    : editorial.links.filter((l) => l.href !== '/pricing')
 
   function statusLabel(pick: OneDayOnePickRow): string {
     if (pick.status) return translateBetStatus(pick.status, t)
@@ -41,10 +72,18 @@ export function OneDayOnePickPage() {
   }
 
   const q = useQuery({
-    queryKey: ['one-day-one-pick'],
-    queryFn: () => api.picksOneDayOnePick(),
+    queryKey: ['one-day-one-pick', token],
+    queryFn: () => api.picksOneDayOnePick(undefined, token),
     refetchInterval: 10 * 60 * 1000,
   })
+
+  function handleBet(pick: PickRow) {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    setSelected(pick)
+  }
 
   const summary = q.data?.summary
   const picks = q.data?.picks ?? []
@@ -100,7 +139,13 @@ export function OneDayOnePickPage() {
                   <Badge tone="accent">{t('common.statusOpen')}</Badge>
                 )}
               </div>
-              <PickCard pick={{ ...pickToday, rank: pickToday.day_rank }} index={0} featured showResult />
+              <PickCard
+                pick={{ ...pickToday, rank: pickToday.day_rank }}
+                index={0}
+                featured
+                showResult
+                onBet={isPickBettable(pickToday) ? handleBet : undefined}
+              />
             </section>
           )}
 
@@ -158,6 +203,7 @@ export function OneDayOnePickPage() {
                   <th className="px-4 py-3">{t('oneDayOnePick.colEv')}</th>
                   <th className="px-4 py-3">{t('oneDayOnePick.colOdds')}</th>
                   <th className="px-4 py-3">{t('oneDayOnePick.colStakePct')}</th>
+                  <th className="px-4 py-3">{t('oneDayOnePick.colNetPl')}</th>
                   <th className="px-4 py-3">{t('oneDayOnePick.colResult')}</th>
                   <th className="px-4 py-3">{t('oneDayOnePick.colScore')}</th>
                 </tr>
@@ -188,6 +234,9 @@ export function OneDayOnePickPage() {
                     <td className="quant px-4 py-3">
                       {p.theoretical_stake_pct != null ? `${p.theoretical_stake_pct.toFixed(2)}%` : '—'}
                     </td>
+                    <td className={cn('quant px-4 py-3 font-medium', replayNetPlClass(p.replay_net_profit_eur))}>
+                      {formatReplayNetPl(p.replay_net_profit_eur)}
+                    </td>
                     <td className="px-4 py-3">
                       <Badge tone={statusTone(p)}>{statusLabel(p)}</Badge>
                     </td>
@@ -203,7 +252,18 @@ export function OneDayOnePickPage() {
       <SeoEditorial
         title={editorial.title}
         paragraphs={editorial.paragraphs}
-        links={editorial.links}
+        links={editorialLinks}
+      />
+
+      <BetModal
+        pick={selected}
+        trackerSource="1day1pick_web"
+        onClose={() => setSelected(null)}
+        onSuccess={() => {
+          void qc.invalidateQueries({ queryKey: ['one-day-one-pick'] })
+          void qc.invalidateQueries({ queryKey: ['portfolio-summary'] })
+          void qc.invalidateQueries({ queryKey: ['portfolio-bets'] })
+        }}
       />
     </div>
   )

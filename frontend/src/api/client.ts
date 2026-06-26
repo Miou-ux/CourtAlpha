@@ -2,6 +2,7 @@ export type LiveMeta = {
   calendar_date: string
   n_matches_today: number
   n_scanned: number
+  n_value_picks?: number
   snapshot_age_min: number | null
 }
 
@@ -289,6 +290,44 @@ export type ProfileUpdatePayload = {
   clear_telegram?: boolean
 }
 
+export type AdminUserBankroll = {
+  start_eur?: number
+  available_eur?: number
+  equity_eur?: number
+  manual_adjust_eur?: number
+  settled_profit_eur?: number
+  committed_open_eur?: number
+  bankroll_mode?: string
+}
+
+export type AdminUserSummary = AuthUser & {
+  tier?: string
+  premium_active?: boolean
+  is_admin?: boolean
+  bankroll?: AdminUserBankroll | null
+  bets_count?: number
+  bets_open?: number
+  bets_closed?: number
+}
+
+export type AdminBillingOrder = {
+  id: string
+  plan_id: string
+  status: string
+  created_at: string
+  paid_at?: string | null
+  price_wei: string
+}
+
+export type AdminUserProfileUpdate = {
+  display_name?: string
+  role?: 'user' | 'admin' | 'owner'
+  email?: string
+  telegram_user_id?: string
+  telegram_username?: string
+  clear_telegram?: boolean
+}
+
 export type TopProbaRow = {
   rank: number
   proba_fav_pct: number
@@ -330,6 +369,7 @@ export type OneDayOnePickRow = PickRow & {
   settled?: boolean
   won?: boolean
   lost?: boolean
+  void?: boolean
   open?: boolean
   is_today?: boolean
   source?: 'db' | 'live' | null
@@ -337,6 +377,7 @@ export type OneDayOnePickRow = PickRow & {
   score_display?: string | null
   theoretical_stake_pct?: number
   theoretical_profit_frac?: number | null
+  replay_net_profit_eur?: number | null
   capture_source?: string | null
 }
 
@@ -360,6 +401,7 @@ export type OneDayOnePickResponse = {
     n_open: number
     n_won: number
     n_lost: number
+    n_void: number
     hit_pct: number
     bankroll_start_eur: number
     bankroll_final_eur: number
@@ -553,19 +595,22 @@ export const api = {
   },
   picksJour: (token?: string | null) => getJson<PicksResponse>('/api/picks/jour', token),
   picksTop5: (token?: string | null) => getJson<PicksResponse>('/api/picks/top5', token),
-  picksOneDayOnePick: (opts?: {
-    bankroll_start?: number
-    ev_min_pct?: number
-    ev_max_pct?: number
-    exclude_today?: boolean
-  }) => {
+  picksOneDayOnePick: (
+    opts?: {
+      bankroll_start?: number
+      ev_min_pct?: number
+      ev_max_pct?: number
+      exclude_today?: boolean
+    },
+    token?: string | null,
+  ) => {
     const q = new URLSearchParams()
     if (opts?.bankroll_start != null) q.set('bankroll_start', String(opts.bankroll_start))
     if (opts?.ev_min_pct != null) q.set('ev_min_pct', String(opts.ev_min_pct))
     if (opts?.ev_max_pct != null) q.set('ev_max_pct', String(opts.ev_max_pct))
     if (opts?.exclude_today === true) q.set('exclude_today', 'true')
     const qs = q.toString()
-    return getJson<OneDayOnePickResponse>(`/api/picks/one-day-one-pick${qs ? `?${qs}` : ''}`)
+    return getJson<OneDayOnePickResponse>(`/api/picks/one-day-one-pick${qs ? `?${qs}` : ''}`, token)
   },
   picksMethodoYearlyStats: (years?: string) => {
     const q = new URLSearchParams()
@@ -701,4 +746,51 @@ export const api = {
     }
     return res.json() as Promise<{ ok: boolean; user: AuthUser }>
   },
+  adminUsers: (token: string | null) =>
+    getJson<{ ok: boolean; count: number; users: AdminUserSummary[] }>('/api/admin/users', token),
+  adminUserDetail: (username: string, token: string | null) =>
+    getJson<{ ok: boolean; user: AdminUserSummary; billing_orders: AdminBillingOrder[] }>(
+      `/api/admin/users/${encodeURIComponent(username)}`,
+      token,
+    ),
+  adminUserBets: (
+    username: string,
+    opts: { limit?: number; status?: string },
+    token: string | null,
+  ) => {
+    const q = new URLSearchParams()
+    if (opts.limit != null) q.set('limit', String(opts.limit))
+    if (opts.status) q.set('status', opts.status)
+    const qs = q.toString()
+    return getJson<{ ok: boolean; count: number; bets: BetRow[] }>(
+      `/api/admin/users/${encodeURIComponent(username)}/bets${qs ? `?${qs}` : ''}`,
+      token,
+    )
+  },
+  adminGrantPremium: (username: string, days: number, token: string | null) =>
+    postJson<{ ok: boolean; username: string; premium_until: string; days_added: number }>(
+      `/api/admin/users/${encodeURIComponent(username)}/premium`,
+      { days },
+      token,
+    ),
+  adminUpdateUserBankroll: (
+    username: string,
+    body: { start_eur?: number; manual_adjust_eur?: number },
+    token: string | null,
+  ) =>
+    patchJson<{ ok: boolean; bankroll: AdminUserBankroll }>(
+      `/api/admin/users/${encodeURIComponent(username)}/bankroll`,
+      body,
+      token,
+    ),
+  adminUpdateUserProfile: (
+    username: string,
+    body: AdminUserProfileUpdate,
+    token: string | null,
+  ) =>
+    patchJson<{ ok: boolean; user: AuthUser }>(
+      `/api/admin/users/${encodeURIComponent(username)}/profile`,
+      body,
+      token,
+    ),
 }
