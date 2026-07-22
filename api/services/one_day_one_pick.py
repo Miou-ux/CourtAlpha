@@ -1,10 +1,12 @@
-"""Replay 1 Day 1 Pick : meilleur candidat EV par circuit (ATP/WTA), puis proba max entre circuits."""
+"""Replay 1 Day 1 Pick : rang 1 de la sélection hybride Top 5 (même règles que /top5)."""
 from __future__ import annotations
 
 import sqlite3
 from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
+
+from api.services.hybrid_selection_text import hybrid_selection_description
 
 PARIS = ZoneInfo("Europe/Paris")
 EV_MIN_PCT = 15.0
@@ -146,6 +148,31 @@ def _serialize_pick(row: dict[str, Any], *, day_rank: int) -> dict[str, Any]:
     }
 
 
+def _enrich_rows_reliability(
+    rows: list[dict[str, Any]],
+    *,
+    db_path: str,
+) -> list[dict[str, Any]]:
+    """Score fiabilité manquant (replay historique avant backfill DB)."""
+    if not any(r.get("data_reliability_score") is None for r in rows):
+        return rows
+    from scripts.match_rank_quality import match_data_reliability_score
+    from scripts.reliability_pick_match import match_dict_from_top_proba_row
+    from scripts.stats_engine import TennisStatsEngine
+
+    engine = TennisStatsEngine(db_path=db_path)
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        d = dict(row)
+        if d.get("data_reliability_score") is None:
+            match = match_dict_from_top_proba_row(d, engine)
+            score, flags = match_data_reliability_score(match)
+            d["data_reliability_score"] = score
+            d["data_reliability_flags"] = "|".join(flags) if flags else None
+        out.append(d)
+    return out
+
+
 def _load_ranked_rows(
     db_path: str,
 ) -> list[dict[str, Any]]:
@@ -172,7 +199,7 @@ def _load_ranked_rows(
             if not is_major_atp_wta_by_name(tour, tournament):
                 continue
             out.append(d)
-        return out
+        return _enrich_rows_reliability(out, db_path=db_path)
     finally:
         conn.close()
 
@@ -195,7 +222,7 @@ def _resolve_today_pick(
     )
     if pick is None:
         return None, None
-    return dict(pick), str(pick.get("source") or "db")
+    return dict(pick), str(pick.get("source") or "live")
 
 
 def _select_one_pick_per_day(
@@ -337,9 +364,12 @@ def build_one_day_one_pick_replay(
     ev_max_pct: float = EV_MAX_PCT,
     exclude_today: bool = False,
 ) -> dict[str, Any]:
-    """Construit le replay 1 Day 1 Pick depuis daily_top_proba_picks (+ snapshot live pour aujourd'hui)."""
+    """Construit le replay 1 Day 1 Pick depuis daily_top_proba_picks (+ live pour aujourd'hui).
+
+    Aujourd'hui : jamais rejoué depuis l'archive DB (snapshots intraday) — uniquement le pick
+    live hybride (aligné Top 5 replay / Telegram matin).
+    """
     today = datetime.now(PARIS).date().isoformat()
-    exclude_date = today if exclude_today else None
 
     raw_rows = _load_ranked_rows(db_path)
     today_raw, today_source = _resolve_today_pick(
@@ -351,36 +381,17 @@ def build_one_day_one_pick_replay(
 
     picks_raw = _select_one_pick_per_day(
         raw_rows,
-        exclude_date=exclude_date,
+        exclude_date=today,
         ev_min_pct=float(ev_min_pct),
         ev_max_pct=float(ev_max_pct),
     )
     if not exclude_today and today_raw is not None:
-        from scripts.daily_top_proba_store import matchup_players_key
-
-        used_before_today = {
-            matchup_players_key(p)
-            for p in picks_raw
-            if str(p.get("calendar_date") or "") < today and matchup_players_key(p)
-        }
-        if matchup_players_key(today_raw) in used_before_today:
-            today_from_replay = next(
-                (p for p in picks_raw if str(p.get("calendar_date") or "") == today),
-                None,
-            )
-            if today_from_replay is not None:
-                today_raw = dict(today_from_replay)
-                today_source = "db"
-            else:
-                today_raw = None
-        if today_raw is not None and (
-            not picks_raw or str(picks_raw[-1].get("calendar_date") or "") != today
-        ):
-            today_row = dict(today_raw)
-            today_row["is_today"] = True
-            picks_raw = [r for r in picks_raw if str(r.get("calendar_date") or "") != today]
-            picks_raw.append(today_row)
-            picks_raw.sort(key=lambda r: str(r.get("calendar_date") or ""))
+        today_row = dict(today_raw)
+        today_row["is_today"] = True
+        if today_source:
+            today_row["source"] = today_source
+        picks_raw.append(today_row)
+        picks_raw.sort(key=lambda r: str(r.get("calendar_date") or ""))
 
     picks_raw = _enrich_picks_with_replay_pnl(picks_raw, bankroll_start=float(bankroll_start))
 
@@ -409,12 +420,8 @@ def build_one_day_one_pick_replay(
 
     return {
         "selection": {
-            "mode": "one_day_one_pick",
-            "description": (
-                "Each day: best EV-eligible pick per circuit (ATP/WTA, proba rank order), "
-                f"then highest model proba between circuits · EV {ev_min_pct:.0f}–{ev_max_pct:.0f}% · majors 250+. "
-                "If standard pick p<70%, fallback to first EV>0 per circuit (cap unchanged)."
-            ),
+            "mode": "one_day_one_pick_hybrid",
+            "description": hybrid_selection_description(rank1=True),
             "ev_min_pct": ev_min_pct,
             "ev_max_pct": ev_max_pct,
             "exclude_today": exclude_today,
