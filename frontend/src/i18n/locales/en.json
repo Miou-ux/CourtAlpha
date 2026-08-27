@@ -28,6 +28,8 @@
     "login": "Log in",
     "logout": "Log out",
     "onePick": "1 Pick",
+    "liveShort": "Live",
+    "methodoShort": "Method",
     "menu": "Menu",
     "mainNav": "Main navigation"
   },
@@ -107,11 +109,13 @@
     "modelEv": "@{{odds}} · Model prob. {{proba}} · EV {{ev}}",
     "alreadyBetOnPick": "Already bet: {{amount}} € on this pick",
     "stakeEur": "Stake (€)",
-    "kellyHint": "Kelly ½ × Brier {{brier}} · rec. {{reco}} € · avail. BR {{bankroll}} €",
-    "invalidOdds": "Invalid odds (minimum 1.01)"
+    "kellyHint": "Kelly 0.65 × Brier {{brier}} · rec. {{reco}} € · avail. BR {{bankroll}} €",
+    "kellyLoading": "Computing Kelly stake from your bankroll…",
+    "invalidOdds": "Invalid odds (minimum 1.01)",
+    "invalidStake": "Invalid stake (minimum €0.50)"
   },
   "valueBetCard": {
-    "kellyMeta": "Kelly ½ × Brier {{brier}} (×{{factor}}) · avail. BR {{bankroll}} €",
+    "kellyMeta": "Kelly 0.65 × Brier {{brier}} (×{{factor}}) · avail. BR {{bankroll}} €",
     "sharpePriority": "· Sharpe {{sharpe}} · Priority {{priority}}"
   },
   "live": {
@@ -136,11 +140,21 @@
   },
   "top5": {
     "kicker": "Best pick",
-    "title": "Top 5 probas",
-    "subtitle": "Model favorite · EV 15–100% · prob. > 60% · sorted by prob. ↓ — ATP/WTA 250+ majors only.",
+    "title": "Hybrid Top 5",
+    "subtitle": "Proba ≥77% · rel≥75 · gap≤30pp · EV tier1 15–35% + tier2 30–55% · sorted by EV ↓ — 250+ majors only.",
     "top5": "Top 5",
-    "emptyTitle": "No picks in the EV 15–100% band",
-    "emptyHint": "Today's best picks may have EV > 100% (outside Top 5 band)."
+    "emptyTitle": "No eligible hybrid picks",
+    "emptyHint": "Criteria: proba ≥77%, rel≥75, gap≤30pp — check Live Tracker or wait for the next snapshot.",
+    "historyTitle": "History & tracking",
+    "historyLoading": "Loading history…",
+    "historyErrorTitle": "Could not load history",
+    "historyErrorHint": "Try again in a few moments.",
+    "historyEmptyTitle": "No picks in history",
+    "historyEmptyHint": "History grows as daily snapshots are captured.",
+    "dailyResults": "Daily results",
+    "colPicks": "Picks",
+    "colHitPct": "Hit %",
+    "colDailyPl": "Daily P/L"
   },
   "portfolio": {
     "kicker": "My portfolio",
@@ -158,7 +172,7 @@
   "oneDayOnePick": {
     "kicker": "Public replay",
     "title": "1 Day 1 Pick",
-    "subtitle": "One pick per day on major 250+ tournaments: per circuit (ATP/WTA), first model favorite by proba ↓ with EV 15–100%, then highest proba across circuits. If that pick is below 70% proba, fallback to first EV > 0 candidate (100% cap). 100 € starting BR; today's pick follows the live snapshot.",
+    "subtitle": "One pick per day: rank 1 of the hybrid Top 5 selection (proba ≥77%, rel≥75, gap≤30pp, EV tier1/tier2, sorted by EV ↓). 100 € starting BR; replay from the live snapshot.",
     "initialBr": "Initial BR",
     "picks": "Picks",
     "hitPct": "Hit %",
@@ -168,11 +182,11 @@
     "errorTitle": "Could not load replay",
     "errorHint": "Try again in a few moments.",
     "emptyTitle": "No picks in scope",
-    "emptyHint": "No major with EV > 0 today (or snapshot unavailable). History grows as picks are captured.",
+    "emptyHint": "No major with proba ≥ 77% and EV 15–55% today (or snapshot unavailable). History grows as picks are captured.",
     "pickOfDay": "Pick of the day",
     "liveSnapshot": "Live snapshot",
     "selectionEvPlus": "EV+ fallback",
-    "selectionLowProba": "Proba < 70%",
+    "selectionLowProba": "Hybrid tier",
     "period": "Period {{start}} → {{end}} · {{days}} day(s)",
     "growth": "Growth",
     "roiStaked": "ROI staked",
@@ -492,7 +506,8 @@
     "searchPlayer": "Search a player…",
     "probaMin": "Min proba (%)",
     "oddMin": "Min odds",
-    "oddMax": "Max odds"
+    "oddMax": "Max odds",
+    "moreFilters": "More filters"
   },
   "rankedTable": {
     "colMatch": "Match · bet on favorite",

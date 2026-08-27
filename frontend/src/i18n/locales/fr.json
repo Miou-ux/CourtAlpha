@@ -28,6 +28,8 @@
     "login": "Connexion",
     "logout": "Déconnexion",
     "onePick": "1 Pick",
+    "liveShort": "Live",
+    "methodoShort": "Méthodo",
     "menu": "Menu",
     "mainNav": "Navigation principale"
   },
@@ -107,11 +109,13 @@
     "modelEv": "@{{odds}} · Proba modèle {{proba}} · EV {{ev}}",
     "alreadyBetOnPick": "Déjà parié : {{amount}} € sur ce pick",
     "stakeEur": "Mise (€)",
-    "kellyHint": "Kelly ½ × Brier {{brier}} · reco {{reco}} € · BR dispo {{bankroll}} €",
-    "invalidOdds": "Cote invalide (minimum 1.01)"
+    "kellyHint": "Kelly 0,65 × Brier {{brier}} · reco {{reco}} € · BR dispo {{bankroll}} €",
+    "kellyLoading": "Calcul Kelly depuis votre bankroll…",
+    "invalidOdds": "Cote invalide (minimum 1.01)",
+    "invalidStake": "Mise invalide (minimum 0,50 €)"
   },
   "valueBetCard": {
-    "kellyMeta": "Kelly ½ × Brier {{brier}} (×{{factor}}) · BR dispo {{bankroll}} €",
+    "kellyMeta": "Kelly 0,65 × Brier {{brier}} (×{{factor}}) · BR dispo {{bankroll}} €",
     "sharpePriority": "· Sharpe {{sharpe}} · Priorité {{priority}}"
   },
   "live": {
@@ -136,11 +140,21 @@
   },
   "top5": {
     "kicker": "Best pick",
-    "title": "Top 5 proba",
-    "subtitle": "Favori modèle · EV 15–100 % · proba > 60 % · tri proba ↓ — tournois majeurs 250+ uniquement.",
+    "title": "Top 5 hybride",
+    "subtitle": "P≥77 % · rel≥75 · gap≤30 pp · EV tier1 15–35 % + tier2 30–55 % · tri EV ↓ — majeurs 250+.",
     "top5": "Top 5",
-    "emptyTitle": "Aucun pick dans la bande EV 15–100 %",
-    "emptyHint": "Les meilleurs picks du jour peuvent avoir une EV > 100 % (hors bande Top 5)."
+    "emptyTitle": "Aucun pick hybride éligible",
+    "emptyHint": "Critères P≥77 %, rel≥75, gap≤30 pp — consulte le Live Tracker ou attends le prochain snapshot.",
+    "historyTitle": "Historique & suivi",
+    "historyLoading": "Chargement de l'historique…",
+    "historyErrorTitle": "Impossible de charger l'historique",
+    "historyErrorHint": "Réessaie dans quelques instants.",
+    "historyEmptyTitle": "Aucun pick dans l'historique",
+    "historyEmptyHint": "L'historique se remplit au fil des captures quotidiennes.",
+    "dailyResults": "Résultats par jour",
+    "colPicks": "Picks",
+    "colHitPct": "Hit %",
+    "colDailyPl": "P/L jour"
   },
   "portfolio": {
     "kicker": "Mon portefeuille",
@@ -158,7 +172,7 @@
   "oneDayOnePick": {
     "kicker": "Public replay",
     "title": "1 Day 1 Pick",
-    "subtitle": "Un pick par jour sur tournois majeurs 250+ : par circuit (ATP/WTA), premier favori modèle proba ↓ avec EV 15–100 %, puis meilleure proba entre circuits. Si ce pick a moins de 70 % de proba, repli sur le premier candidat EV > 0 (cap 100 %). BR initiale 100 € ; le pick du jour suit le snapshot live.",
+    "subtitle": "Un pick par jour : rang 1 de la sélection hybride Top 5 (P≥77 %, rel≥75, gap≤30 pp, EV tier1/tier2, tri EV ↓). BR initiale 100 € ; replay depuis le snapshot live.",
     "initialBr": "BR initiale",
     "picks": "Picks",
     "hitPct": "Hit %",
@@ -168,11 +182,11 @@
     "errorTitle": "Impossible de charger le replay",
     "errorHint": "Réessaie dans quelques instants.",
     "emptyTitle": "Aucun pick dans le périmètre",
-    "emptyHint": "Aucun majeur avec EV > 0 aujourd'hui (ou snapshot indisponible). L'historique se remplit au fil des captures.",
+    "emptyHint": "Aucun majeur avec proba ≥ 77 % et EV 15–55 % aujourd'hui (ou snapshot indisponible). L'historique se remplit au fil des captures.",
     "pickOfDay": "Pick du jour",
     "liveSnapshot": "Snapshot live",
     "selectionEvPlus": "Repli EV+",
-    "selectionLowProba": "Proba < 70 %",
+    "selectionLowProba": "Tier hybride",
     "period": "Période {{start}} → {{end}} · {{days}} jour(s)",
     "growth": "Croissance",
     "roiStaked": "ROI misé",
@@ -492,7 +506,8 @@
     "searchPlayer": "Rechercher un joueur…",
     "probaMin": "Proba min (%)",
     "oddMin": "Cote min",
-    "oddMax": "Cote max"
+    "oddMax": "Cote max",
+    "moreFilters": "Filtres avancés"
   },
   "rankedTable": {
     "colMatch": "Match · pari sur le favori",

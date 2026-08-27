@@ -27,7 +27,7 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
   const { token } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const [stake, setStake] = useState('10')
+  const [stake, setStake] = useState('')
   const [observedOddInput, setObservedOddInput] = useState('1.01')
   const [stakeTouched, setStakeTouched] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -56,6 +56,12 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
     () => computeKellyStake(pModel ?? 0, odds, segBrier, bankrollAvail),
     [pModel, odds, segBrier, bankrollAvail],
   )
+  const recommendedStakeEur = useMemo(() => {
+    if (customOdd != null && defaultStake != null && defaultStake > 0) {
+      return defaultStake
+    }
+    return kelly.eur > 0 ? kelly.eur : 0.5
+  }, [customOdd, defaultStake, kelly.eur])
   const evPct =
     pick && trueOdd > 1
       ? computeEvPct(odds, trueOdd)
@@ -64,18 +70,30 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
   useEffect(() => {
     if (!pick) return
     setStakeTouched(false)
+    setStake('')
     setObservedOddInput(bookOdd.toFixed(2))
     setError(null)
-    if (customOdd != null && defaultStake != null && defaultStake > 0) {
-      setStake(defaultStake.toFixed(2))
-    }
-  }, [pick, defaultStake, bookOdd, customOdd])
+  }, [pick, bookOdd])
 
   useEffect(() => {
-    if (!pick || !oddsEditable || stakeTouched || customOdd != null) return
-    if (!Number.isFinite(parsedObservedOdd) || parsedObservedOdd < 1.01) return
-    setStake(kelly.eur > 0 ? kelly.eur.toFixed(2) : '0.50')
-  }, [pick, oddsEditable, stakeTouched, customOdd, parsedObservedOdd, kelly.eur])
+    if (!pick || stakeTouched) return
+    if (customOdd != null && defaultStake != null && defaultStake > 0) {
+      setStake(defaultStake.toFixed(2))
+      return
+    }
+    if (oddsEditable && (!Number.isFinite(parsedObservedOdd) || parsedObservedOdd < 1.01)) return
+    if (portfolioQ.isLoading) return
+    setStake(recommendedStakeEur.toFixed(2))
+  }, [
+    pick,
+    stakeTouched,
+    customOdd,
+    defaultStake,
+    oddsEditable,
+    parsedObservedOdd,
+    recommendedStakeEur,
+    portfolioQ.isLoading,
+  ])
 
   if (!pick) return null
 
@@ -90,6 +108,11 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
       setError(t('betModal.invalidOdds'))
       return
     }
+    const stakeNum = parseFloat(stake.replace(',', '.'))
+    if (!Number.isFinite(stakeNum) || stakeNum < 0.5) {
+      setError(t('betModal.invalidStake'))
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -98,7 +121,7 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
         match_name: activePick.match_name || `${betOn} vs ${pickOpponent(activePick)}`,
         bet_on: betOn,
         odds,
-        stake: parseFloat(stake),
+        stake: stakeNum,
         match_date: activePick.match_date || activePick.calendar_date,
         tournament: activePick.tournament,
         tour: activePick.tour,
@@ -120,8 +143,11 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
   const evLabel = `${evPct >= 0 ? '+' : ''}${evPct.toFixed(1)}%`
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <Card variant="elevated" className="w-full max-w-md p-5">
+    <div className="fixed inset-0 z-50 flex flex-col bg-bg md:items-center md:justify-center md:bg-black/70 md:p-4">
+      <Card
+        variant="elevated"
+        className="flex h-full w-full flex-col overflow-y-auto rounded-none border-0 p-5 pt-[max(1.25rem,env(safe-area-inset-top))] md:h-auto md:max-h-[90dvh] md:max-w-md md:rounded-2xl md:border md:pt-5"
+      >
         <div className="mb-4 flex items-start justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-accent">{t('betModal.title')}</p>
@@ -174,7 +200,7 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
               setStake(e.target.value)
             }}
           />
-          {oddsEditable && bankrollAvail > 0 && (
+          {bankrollAvail > 0 && (
             <p className="mt-1 text-xs text-muted">
               {t('betModal.kellyHint', {
                 brier: segBrier.toFixed(3),
@@ -183,13 +209,21 @@ export function BetModal({ pick, onClose, onSuccess, customOdd, defaultStake, tr
               })}
             </p>
           )}
+          {portfolioQ.isLoading && !stakeTouched && (
+            <p className="mt-1 text-xs text-muted">{t('betModal.kellyLoading')}</p>
+          )}
         </label>
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
+        <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={onClose} className="min-h-12 w-full sm:min-h-0 sm:w-auto">
             {t('common.cancel')}
           </Button>
-          <Button variant="success" disabled={loading} onClick={() => void submit()}>
+          <Button
+            variant="success"
+            disabled={loading || !stake || parseFloat(stake.replace(',', '.')) < 0.5}
+            onClick={() => void submit()}
+            className="min-h-12 w-full sm:min-h-0 sm:w-auto"
+          >
             {loading ? t('common.sending') : t('common.confirm')}
           </Button>
         </div>
